@@ -9,13 +9,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: 'Noto Sans Lao', 'Nunito', sans-serif;
-            background-color: #ffffff;
-            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
-            background-size: 30px 30px;
+            font-family: 'Noto Sans Lao', sans-serif;
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
             min-height: 100vh;
             overflow-x: hidden;
-            touch-action: manipulation;
+            touch-action: manipulation; /* ປ້ອງກັນການຊູມເວລາແຕະໄວໆ */
             user-select: none;
         }
 
@@ -213,7 +211,7 @@
             <div id="visual-aid" class="text-8xl mb-4 hidden animate-bounce-slow"></div>
             
             <!-- ປຸ່ມຟັງສຽງ (ສຳລັບໝວດຟັງ) -->
-            <button id="listen-btn" onclick="playQuestionAudio()" aria-label="ຟັງຄຳສັບ" class="hidden w-20 h-20 bg-blue-500 text-white rounded-full flex items-center justify-center text-4xl mb-4 shadow-lg animate-pulse-ring border-4 border-blue-300 hover:bg-blue-400">
+            <button id="listen-btn" onclick="playQuestionAudio()" class="hidden w-20 h-20 bg-blue-500 text-white rounded-full flex items-center justify-center text-4xl mb-4 shadow-lg animate-pulse-ring border-4 border-blue-300 hover:bg-blue-400">
                 <i class="fa-solid fa-volume-high"></i>
             </button>
             
@@ -304,8 +302,6 @@
         let totalQuestions = 10;
         let currentQuestionList = [];
         let isAnswering = false;
-        let questionAudioRequestId = 0;
-        let currentQuestionAudio = null;
         
         let playerData = {
             totalStars: 0,
@@ -372,88 +368,22 @@
         }
 
         // --- Text-to-Speech (ໝວດຟັງສຽງ) ---
-        function getEnglishVoice() {
-            const voices = window.speechSynthesis.getVoices();
-            return voices.find(voice => /^en-US$/i.test(voice.lang))
-                || voices.find(voice => /^en-GB$/i.test(voice.lang))
-                || voices.find(voice => /^en(?:-|$)/i.test(voice.lang));
-        }
-
         function speakText(text) {
             if ('speechSynthesis' in window) {
                 // ຢຸດສຽງເກົ່າກ່ອນເວົ້າໃໝ່
                 window.speechSynthesis.cancel();
-                const msg = new SpeechSynthesisUtterance(String(text).trim());
-                const englishVoice = getEnglishVoice();
-                if (englishVoice) {
-                    msg.voice = englishVoice;
-                    msg.lang = englishVoice.lang;
-                } else {
-                    msg.lang = 'en-US';
-                }
-                msg.rate = 0.8;
+                const msg = new SpeechSynthesisUtterance();
+                msg.text = text;
+                msg.lang = 'en-US';
+                msg.rate = 0.9; // ອ່ານຊ້າລົງໜ້ອຍໜຶ່ງໃຫ້ເດັກຟັງທັນ
                 window.speechSynthesis.speak(msg);
             }
         }
         
-        function stopQuestionAudio() {
-            questionAudioRequestId++;
-            if (currentQuestionAudio) {
-                currentQuestionAudio.pause();
-                currentQuestionAudio.removeAttribute('src');
-                currentQuestionAudio.load();
-                currentQuestionAudio = null;
-            }
-        }
-
-        async function playQuestionAudio() {
-            if (currentMode !== 'listen') return;
-            const question = currentQuestionList[currentQuestion];
-            if (!question) return;
-
-            stopQuestionAudio();
-            const requestId = questionAudioRequestId;
-            const listenBtn = document.getElementById('listen-btn');
-            const subText = document.getElementById('question-subtext');
-            listenBtn.disabled = true;
-            subText.textContent = 'ກຳລັງໂຫຼດສຽງ...';
-            subText.classList.remove('hidden');
-
-            try {
-                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(question.answer.toLowerCase())}`);
-                if (!response.ok) throw new Error(`Pronunciation lookup failed: ${response.status}`);
-                const entries = await response.json();
-                if (requestId !== questionAudioRequestId) return;
-
-                const phonetics = Array.isArray(entries)
-                    ? entries.flatMap(entry => Array.isArray(entry.phonetics) ? entry.phonetics : [])
-                    : [];
-                const pronunciation = phonetics.find(item => item.audio && /[-_]us(?:[_-]\d+)?(?:\.[a-z0-9]+)?(?:\?|$)/i.test(item.audio))
-                    || phonetics.find(item => item.audio);
-                if (!pronunciation) throw new Error(`No pronunciation audio found for "${question.answer}"`);
-
-                const audioUrl = pronunciation.audio.startsWith('//')
-                    ? `https:${pronunciation.audio}`
-                    : pronunciation.audio;
-                const audio = new Audio(audioUrl);
-                currentQuestionAudio = audio;
-                audio.addEventListener('error', () => {
-                    if (requestId === questionAudioRequestId) {
-                        subText.textContent = 'ສຽງບໍ່ພ້ອມໃຊ້ ກວດອິນເຕີເນັດ ຫຼືລອງອີກຄັ້ງ';
-                        console.error('Vocabulary pronunciation audio failed to load:', audio.error);
-                    }
-                }, { once: true });
-                await audio.play();
-                if (requestId === questionAudioRequestId) {
-                    subText.textContent = 'ຟັງຄຳສັບ ແລ້ວເລືອກຄຳຕອບ';
-                }
-            } catch (error) {
-                if (requestId === questionAudioRequestId) {
-                    subText.textContent = 'ສຽງບໍ່ພ້ອມໃຊ້ ກວດອິນເຕີເນັດ ຫຼືລອງອີກຄັ້ງ';
-                    console.error('Unable to play vocabulary pronunciation:', error);
-                }
-            } finally {
-                if (requestId === questionAudioRequestId) listenBtn.disabled = false;
+        function playQuestionAudio() {
+            if(currentMode === 'listen') {
+                playSound('click');
+                speakText(currentQuestionList[currentQuestion].answer); // ໃນໝວດຟັງ ຄຳຕອບຄືສິ່ງທີ່ຕ້ອງເວົ້າ
             }
         }
 
@@ -483,7 +413,6 @@
 
         function showScreen(screenId) {
             playSound('click');
-            stopQuestionAudio();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             if (screenId === 'screen-stats') renderBadges();
@@ -750,7 +679,6 @@
         }
 
         function renderQuestion() {
-            stopQuestionAudio();
             isAnswering = false;
             const q = currentQuestionList[currentQuestion];
             
@@ -763,7 +691,6 @@
             const subText = document.getElementById('question-subtext');
             const visualAid = document.getElementById('visual-aid');
             const listenBtn = document.getElementById('listen-btn');
-            listenBtn.disabled = false;
             
             // ຣີເຊັດການສະແດງຜົນ
             visualAid.classList.add('hidden');
@@ -788,8 +715,8 @@
                 listenBtn.classList.remove('hidden');
                 qText.innerHTML = "ຟັງແລ້ວເລືອກຄຳສັບ";
                 qText.classList.remove('english-text');
-                subText.textContent = 'ກົດລຳໂພງເພື່ອຟັງຄຳສັບ';
-                subText.classList.remove('hidden');
+                // ອ່ານສຽງອັດຕະໂນມັດເມື່ອເປີດຂໍ້ໃໝ່ (ບາງ Browser ອາດຕ້ອງໃຫ້ User ກົດເອງຄັ້ງທຳອິດ)
+                setTimeout(() => playQuestionAudio(), 500);
             }
 
             // ສ້າງປຸ່ມຄຳຕອບ
@@ -802,10 +729,8 @@
                 const btn = document.createElement('button');
                 btn.className = "btn-cartoon bg-white text-blue-600 font-bold text-2xl sm:text-3xl py-5 rounded-3xl border-4 border-blue-200 hover:bg-blue-50 hover:border-blue-300 shadow-md transition-colors english-text flex justify-center items-center";
                 
-                const optionIcon = currentMode === 'listen'
-                    ? ''
-                    : ' <i class="fa-solid fa-volume-up text-blue-300 text-xl ml-3 opacity-60"></i>';
-                btn.innerHTML = `<span>${opt}</span>${optionIcon}`;
+                // ເພີ່ມຮູບລຳໂພງນ້ອຍໆ ເພື່ອບອກວ່າມີສຽງອ່ານ
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-solid fa-volume-up text-blue-300 text-xl ml-3 opacity-60"></i>`;
                 
                 btn.onclick = () => checkAnswer(opt, btn);
                 container.appendChild(btn);
@@ -821,12 +746,7 @@
             isAnswering = true;
             
             // ອ່ານອອກສຽງພາສາອັງກິດທັນທີທີ່ກົດເລືອກຄຳຕອບ!
-            if (currentMode === 'listen') {
-                stopQuestionAudio();
-                document.getElementById('listen-btn').disabled = true;
-            } else {
-                speakText(selectedAns);
-            }
+            speakText(selectedAns);
             
             const q = currentQuestionList[currentQuestion];
             const isCorrect = selectedAns === q.a;

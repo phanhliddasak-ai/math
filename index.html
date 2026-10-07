@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Safari - ຜະຈົນໄພພາສາອັງກິດ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;700;900&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans Lao', 'Nunito', sans-serif;
+            background-color: #ffffff;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 30px 30px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        /* ປຸ່ມແບບ Cartoon 3D */
+        .btn-cartoon {
+            transition: all 0.1s ease;
+            box-shadow: 0 6px 0px rgba(0,0,0,0.2);
+            position: relative;
+            top: 0;
+        }
+        .btn-cartoon:active {
+            top: 6px;
+            box-shadow: 0 0px 0px rgba(0,0,0,0.2);
+        }
+        .btn-cartoon.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* ອານິເມຊັນ */
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-slow {
+            animation: bounce-slow 2.5s infinite ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s infinite;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: flex; }
+        
+        .english-text { font-family: 'Nunito', sans-serif; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <!-- ໜ້າຫຼັກ -->
+    <div id="screen-home" class="screen active flex-col items-center w-full max-w-md animate-pop text-center">
+        <h1 class="text-4xl md:text-5xl font-black text-slate-800 drop-shadow-sm mb-2 mt-8 leading-tight">
+            English Safari<br>
+            <span class="text-2xl text-blue-500">ຜະຈົນໄພພາສາອັງກິດ</span>
+        </h1>
+        
+        <div class="text-6xl my-6 animate-bounce-slow">
+            🦁🐒🐘
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm border-4 border-slate-100 relative mt-4">
+            <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-yellow-100 rounded-full py-1 px-4 border-2 border-yellow-400 shadow-sm flex gap-3 w-max">
+                <div class="font-bold text-yellow-700">⭐ <span id="home-total-stars">0</span> ດາວ</div>
+                <div class="text-sm font-bold text-blue-600 border-l-2 border-yellow-300 pl-3" id="home-highest-badge">🥉 Starter</div>
+            </div>
+
+            <div class="space-y-4 w-full mt-2">
+                <button onclick="showScreen('screen-levels')" class="btn-cartoon w-full bg-green-500 hover:bg-green-400 text-white font-bold py-4 px-6 rounded-2xl text-2xl border-2 border-green-600">
+                    <i class="fa-solid fa-play mr-2"></i> ເລີ່ມຫຼິ້ນ
+                </button>
+                <button onclick="showScreen('screen-stats')" class="btn-cartoon w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-2xl text-xl border-2 border-blue-600">
+                    <i class="fa-solid fa-trophy mr-2"></i> ຄະແນນຂອງຂ້ອຍ
+                </button>
+            </div>
+        </div>
+        
+        <!-- Settings (ຄວາມຍາກ) -->
+        <div class="mt-6 flex flex-col items-center bg-white border-2 border-slate-200 px-6 py-3 rounded-2xl shadow-sm w-full max-w-sm">
+            <span class="font-bold text-gray-700 mb-2">ເລືອກລະດັບຊັ້ນຮຽນ:</span>
+            <select id="difficulty-select" onchange="saveDifficulty()" class="w-full bg-slate-100 p-2 rounded-xl font-bold text-indigo-600 outline-none cursor-pointer border-2 border-slate-200 text-center text-lg">
+                <option value="p1">ປ.1 (ABC, ສີ, ສັດ, ຕົວເລກ)</option>
+                <option value="p2">ປ.2 (ຮ່າງກາຍ, ໝາກໄມ້, ຄຳກິລິຍາ)</option>
+                <option value="p3">ປ.3 (ກິດຈະວັດ, ສິ່ງຂອງ, ວັນ)</option>
+                <option value="p4">ປ.4 (ອາຊີບ, ສະຖານທີ່, ບຸບພະບົດ)</option>
+                <option value="p5">ປ.5 (ໄວຍາກອນ, ປະໂຫຍກສົມບູນ)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ໜ້າເລືອກລະດັບ (ໝວດໝູ່ເກມ) -->
+    <div id="screen-levels" class="screen flex-col items-center w-full max-w-md hidden text-center">
+        <button onclick="showScreen('screen-home')" class="self-start text-slate-600 hover:text-slate-800 text-lg font-bold mb-4 bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-full transition-colors btn-cartoon">
+            <i class="fa-solid fa-arrow-left"></i> ກັບຄືນ
+        </button>
+        
+        <h2 class="text-3xl font-black text-slate-800 mb-6">ເລືອກໝວດຮຽນຮູ້</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full px-2">
+            <!-- ໝວດ 1: ຄຳສັບ -->
+            <button onclick="startGame('vocab')" class="btn-cartoon bg-rose-400 hover:bg-rose-300 text-white rounded-3xl p-4 flex items-center border-4 border-rose-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    🍎
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl english-text">Vocabulary</div>
+                    <div class="font-semibold text-rose-100 text-sm">ຮຽນຮູ້ຄຳສັບ</div>
+                </div>
+            </button>
+
+            <!-- ໝວດ 2: ແປພາສາ -->
+            <button onclick="startGame('translate')" class="btn-cartoon bg-cyan-400 hover:bg-cyan-300 text-white rounded-3xl p-4 flex items-center border-4 border-cyan-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    🔄
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl english-text">Translate</div>
+                    <div class="font-semibold text-cyan-100 text-sm">ຝຶກແປພາສາ</div>
+                </div>
+            </button>
+
+            <!-- ໝວດ 3: ໄວຍາກອນ -->
+            <button onclick="startGame('grammar')" class="btn-cartoon bg-amber-400 hover:bg-amber-300 text-white rounded-3xl p-4 flex items-center border-4 border-amber-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    ✏️
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl english-text">Grammar</div>
+                    <div class="font-semibold text-amber-100 text-sm">ຕື່ມຄຳໃນຊ່ອງຫວ່າງ</div>
+                </div>
+            </button>
+
+            <!-- ໝວດ 4: ຟັງສຽງ -->
+            <button onclick="startGame('listen')" class="btn-cartoon bg-purple-400 hover:bg-purple-300 text-white rounded-3xl p-4 flex items-center border-4 border-purple-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    🎧
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl english-text">Listening</div>
+                    <div class="font-semibold text-purple-100 text-sm">ຟັງແລ້ວເລືອກຄຳຕອບ</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ໜ້າຫຼິ້ນເກມ -->
+    <div id="screen-game" class="screen flex-col items-center w-full max-w-md hidden">
+        <!-- Top Bar -->
+        <div class="w-full flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border-2 border-slate-100">
+            <button onclick="confirmExit()" class="text-gray-500 hover:text-gray-700 font-bold bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="flex-1 px-4">
+                <div class="h-4 w-full bg-slate-100 rounded-full overflow-hidden border-2 border-slate-200 shadow-inner">
+                    <div id="progress-bar" class="h-full bg-green-500 w-0 relative transition-all duration-300">
+                        <div class="absolute inset-0 bg-white/20 w-full h-1"></div>
+                    </div>
+                </div>
+                <div class="text-center text-xs font-bold text-slate-500 mt-1">ຂໍ້ <span id="current-question-num">1</span>/10</div>
+            </div>
+
+            <div class="bg-yellow-100 px-3 py-1 rounded-full font-bold text-yellow-600 border-2 border-yellow-300 shadow-sm flex items-center">
+                <i class="fa-solid fa-star text-yellow-500 mr-1"></i> <span id="game-score">0</span>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="bg-white w-full rounded-3xl p-6 shadow-xl text-center min-h-[240px] flex flex-col justify-center items-center relative mb-6 border-4 border-slate-100">
+            
+            <!-- ພື້ນທີ່ສຳລັບຮູບພາບປະກອບ (ໝວດຄຳສັບ) -->
+            <div id="visual-aid" class="text-8xl mb-4 hidden animate-bounce-slow"></div>
+            
+            <!-- ປຸ່ມຟັງສຽງ (ສຳລັບໝວດຟັງ) -->
+            <button id="listen-btn" onclick="playQuestionAudio()" aria-label="ຟັງຄຳສັບ" class="hidden w-20 h-20 bg-blue-500 text-white rounded-full flex items-center justify-center text-4xl mb-4 shadow-lg animate-pulse-ring border-4 border-blue-300 hover:bg-blue-400">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            
+            <div id="question-text" class="text-3xl font-black text-slate-700 tracking-wide english-text">
+                <!-- ຄຳຖາມຈະສະແດງຢູ່ໜີ້ -->
+            </div>
+            
+            <div id="question-subtext" class="text-lg font-bold text-slate-400 mt-2 hidden">
+                <!-- ຂໍ້ຄວາມແປລາວຊ່ວຍເຫຼືອ -->
+            </div>
+
+            <!-- Message box ສຳລັບຄຳຕິຊົມ -->
+            <div id="feedback-msg" class="absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-white px-6 py-2 rounded-full font-bold text-lg shadow-lg opacity-0 transition-opacity duration-300 border-2 whitespace-nowrap pointer-events-none">
+            </div>
+        </div>
+
+        <!-- Answer Area (Options) -->
+        <div id="answers-container" class="grid grid-cols-2 gap-4 w-full">
+            <!-- ປຸ່ມຄຳຕອບຈະຖືກສ້າງດ້ວຍ JS -->
+        </div>
+    </div>
+
+    <!-- ໜ້າສະຫຼຸບຜົນ (Game Over) -->
+    <div id="screen-summary" class="screen flex-col items-center w-full max-w-md hidden text-center animate-pop">
+        <h2 class="text-4xl font-black text-slate-800 mb-2">ສຳເລັດແລ້ວ!</h2>
+        <p class="text-blue-700 text-lg mb-6 font-bold bg-blue-100 px-4 py-1 rounded-full border-2 border-blue-200" id="summary-mode-name">Vocabulary</p>
+
+        <div class="bg-white rounded-3xl p-8 shadow-2xl w-full relative border-4 border-yellow-300">
+            <div id="summary-icon" class="text-7xl absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-100 rounded-full w-24 h-24 flex items-center justify-center border-4 border-white shadow-lg animate-bounce-slow">
+                🏆
+            </div>
+
+            <div class="mt-8 mb-6">
+                <p class="text-gray-500 font-bold mb-1">ຕອບຖືກ</p>
+                <div class="text-5xl font-black text-green-500"><span id="summary-correct">8</span><span class="text-3xl text-gray-400">/10</span></div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-2xl p-4 mb-6 border-2 border-yellow-200">
+                <p class="text-yellow-700 font-bold mb-2">ດາວທີ່ໄດ້ຮັບຮອບນີ້</p>
+                <div class="text-4xl font-black text-yellow-500">
+                    +<span id="summary-stars">8</span> ⭐
+                </div>
+            </div>
+
+            <div id="new-badge-msg" class="hidden bg-blue-100 text-blue-700 p-2 rounded-xl mb-6 font-bold animate-pulse border-2 border-blue-300">
+                🎉 ປົດລັອກຍົດໃໝ່ແລ້ວ! 🎉
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="playAgain()" class="btn-cartoon w-full bg-green-500 hover:bg-green-400 text-white font-bold py-4 px-6 rounded-2xl text-xl border-2 border-green-600">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> ຫຼິ້ນອີກຄັ້ງ
+                </button>
+                <button onclick="showScreen('screen-levels')" class="btn-cartoon w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-2xl text-lg border-2 border-blue-600">
+                    <i class="fa-solid fa-list mr-2"></i> ເລືອກໝວດອື່ນ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ໜ້າສະຖິຕິ (Stats / Badges) -->
+    <div id="screen-stats" class="screen flex-col items-center w-full max-w-md hidden text-center">
+        <button onclick="showScreen('screen-home')" class="self-start text-slate-600 hover:text-slate-800 text-lg font-bold mb-4 bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-full transition-colors btn-cartoon">
+            <i class="fa-solid fa-arrow-left"></i> ກັບຄືນ
+        </button>
+
+        <h2 class="text-3xl font-black text-slate-800 mb-6">ຄະແນນສະສົມຂອງຂ້ອຍ</h2>
+
+        <div class="bg-white rounded-3xl p-6 shadow-xl w-full border-4 border-slate-100 mb-6">
+            <div class="text-6xl text-yellow-400 mb-2">⭐</div>
+            <div class="text-sm font-bold text-gray-500 uppercase">ດາວທັງໝົດ</div>
+            <div class="text-5xl font-black text-slate-800" id="stats-total-stars">0</div>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-700 mb-4 w-full text-left px-2">ຫຼຽນລາງວັນ (Badges)</h3>
+        
+        <div class="grid grid-cols-3 gap-3 w-full px-2" id="badges-container">
+            <!-- Badges ຈະຖືກ Render ຜ່ານ JS -->
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        // --- ຕົວປ່ຽນສະຖານະຂອງເກມ ---
+        let currentMode = 'vocab';
+        let currentQuestion = 0;
+        let score = 0;
+        let totalQuestions = 10;
+        let currentQuestionList = [];
+        let isAnswering = false;
+        let questionAudioRequestId = 0;
+        let currentQuestionAudio = null;
+        
+        let playerData = {
+            totalStars: 0,
+            difficulty: 'p1', 
+            badges: [] 
+        };
+
+        const BADGES = [
+            { id: 'starter', name: 'Starter', icon: '🥉', reqStars: 0, desc: 'ຍິນດີຕ້ອນຮັບ!' },
+            { id: 'learner', name: 'Learner', icon: '🥈', reqStars: 50, desc: 'ໄດ້ດາວ 50 ດວງ' },
+            { id: 'speaker', name: 'Speaker', icon: '🥇', reqStars: 150, desc: 'ໄດ້ດາວ 150 ດວງ' },
+            { id: 'scholar', name: 'Scholar', icon: '🎓', reqStars: 300, desc: 'ໄດ້ດາວ 300 ດວງ' },
+            { id: 'master', name: 'Master', icon: '👑', reqStars: 500, desc: 'ໄດ້ດາວ 500 ດວງ' }
+        ];
+
+        // --- ລະບົບສຽງ (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'win') {
+                const freqs = [400, 500, 600, 800];
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'sine';
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = f;
+                    g.gain.setValueAtTime(0.2, audioCtx.currentTime + (i*0.1));
+                    g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i*0.1) + 0.3);
+                    o.start(audioCtx.currentTime + (i*0.1));
+                    o.stop(audioCtx.currentTime + (i*0.1) + 0.3);
+                });
+            }
+        }
+
+        // --- Text-to-Speech (ໝວດຟັງສຽງ) ---
+        function getEnglishVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(voice => /^en-US$/i.test(voice.lang))
+                || voices.find(voice => /^en-GB$/i.test(voice.lang))
+                || voices.find(voice => /^en(?:-|$)/i.test(voice.lang));
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                // ຢຸດສຽງເກົ່າກ່ອນເວົ້າໃໝ່
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(String(text).trim());
+                const englishVoice = getEnglishVoice();
+                if (englishVoice) {
+                    msg.voice = englishVoice;
+                    msg.lang = englishVoice.lang;
+                } else {
+                    msg.lang = 'en-US';
+                }
+                msg.rate = 0.8;
+                window.speechSynthesis.speak(msg);
+            }
+        }
+        
+        function stopQuestionAudio() {
+            questionAudioRequestId++;
+            if (currentQuestionAudio) {
+                currentQuestionAudio.pause();
+                currentQuestionAudio.removeAttribute('src');
+                currentQuestionAudio.load();
+                currentQuestionAudio = null;
+            }
+        }
+
+        async function playQuestionAudio() {
+            if (currentMode !== 'listen') return;
+            const question = currentQuestionList[currentQuestion];
+            if (!question) return;
+
+            stopQuestionAudio();
+            const requestId = questionAudioRequestId;
+            const listenBtn = document.getElementById('listen-btn');
+            const subText = document.getElementById('question-subtext');
+            listenBtn.disabled = true;
+            subText.textContent = 'ກຳລັງໂຫຼດສຽງ...';
+            subText.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(question.answer.toLowerCase())}`);
+                if (!response.ok) throw new Error(`Pronunciation lookup failed: ${response.status}`);
+                const entries = await response.json();
+                if (requestId !== questionAudioRequestId) return;
+
+                const phonetics = Array.isArray(entries)
+                    ? entries.flatMap(entry => Array.isArray(entry.phonetics) ? entry.phonetics : [])
+                    : [];
+                const pronunciation = phonetics.find(item => item.audio && /[-_]us(?:[_-]\d+)?(?:\.[a-z0-9]+)?(?:\?|$)/i.test(item.audio))
+                    || phonetics.find(item => item.audio);
+                if (!pronunciation) throw new Error(`No pronunciation audio found for "${question.answer}"`);
+
+                const audioUrl = pronunciation.audio.startsWith('//')
+                    ? `https:${pronunciation.audio}`
+                    : pronunciation.audio;
+                const audio = new Audio(audioUrl);
+                currentQuestionAudio = audio;
+                audio.addEventListener('error', () => {
+                    if (requestId === questionAudioRequestId) {
+                        subText.textContent = 'ສຽງບໍ່ພ້ອມໃຊ້ ກວດອິນເຕີເນັດ ຫຼືລອງອີກຄັ້ງ';
+                        console.error('Vocabulary pronunciation audio failed to load:', audio.error);
+                    }
+                }, { once: true });
+                await audio.play();
+                if (requestId === questionAudioRequestId) {
+                    subText.textContent = 'ຟັງຄຳສັບ ແລ້ວເລືອກຄຳຕອບ';
+                }
+            } catch (error) {
+                if (requestId === questionAudioRequestId) {
+                    subText.textContent = 'ສຽງບໍ່ພ້ອມໃຊ້ ກວດອິນເຕີເນັດ ຫຼືລອງອີກຄັ້ງ';
+                    console.error('Unable to play vocabulary pronunciation:', error);
+                }
+            } finally {
+                if (requestId === questionAudioRequestId) listenBtn.disabled = false;
+            }
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('englishAdventureData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    playerData = { ...playerData, ...parsed };
+                } catch(e) { console.error("Error loading data"); }
+            }
+            if(playerData.badges.length === 0) playerData.badges.push('starter');
+            document.getElementById('difficulty-select').value = playerData.difficulty;
+            updateHomeUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('englishAdventureData', JSON.stringify(playerData));
+            updateHomeUI();
+        }
+
+        function saveDifficulty() {
+            playerData.difficulty = document.getElementById('difficulty-select').value;
+            saveData();
+            playSound('click');
+        }
+
+        function showScreen(screenId) {
+            playSound('click');
+            stopQuestionAudio();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'screen-stats') renderBadges();
+            // ຢຸດສຽງເວົ້າເມື່ອປ່ຽນໜ້າ
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+
+        function updateHomeUI() {
+            document.getElementById('home-total-stars').textContent = playerData.totalStars;
+            document.getElementById('stats-total-stars').textContent = playerData.totalStars;
+            
+            let highestBadge = BADGES[0];
+            for (let i = BADGES.length - 1; i >= 0; i--) {
+                if (playerData.badges.includes(BADGES[i].id)) {
+                    highestBadge = BADGES[i];
+                    break;
+                }
+            }
+            document.getElementById('home-highest-badge').innerHTML = `${highestBadge.icon} ${highestBadge.name}`;
+        }
+
+        function renderBadges() {
+            const container = document.getElementById('badges-container');
+            container.innerHTML = '';
+            BADGES.forEach(badge => {
+                const isUnlocked = playerData.badges.includes(badge.id);
+                const badgeEl = document.createElement('div');
+                badgeEl.className = `flex flex-col items-center justify-center p-3 rounded-2xl ${isUnlocked ? 'bg-white shadow border-2 border-yellow-300' : 'bg-slate-100 border-2 border-slate-200 opacity-60 grayscale'}`;
+                badgeEl.innerHTML = `
+                    <div class="text-4xl mb-1 ${isUnlocked ? 'animate-bounce-slow' : ''}">${badge.icon}</div>
+                    <div class="text-xs font-bold text-center ${isUnlocked ? 'text-gray-700' : 'text-gray-400'}">${badge.name}</div>
+                    ${!isUnlocked ? `<div class="text-[10px] text-gray-500 mt-1">⭐ ${badge.reqStars}</div>` : ''}
+                `;
+                container.appendChild(badgeEl);
+            });
+        }
+
+        // ຖານຂໍ້ມູນຄຳຖາມ (ປັບຕາມຊັ້ນຮຽນ ແລະ ໝວດ)
+        const QUESTION_BANK = {
+            vocab: {
+                p1: [
+                    {q: '🍎', a: 'Apple', opts: ['Apple', 'Banana', 'Orange', 'Grape']},
+                    {q: '🐶', a: 'Dog', opts: ['Cat', 'Dog', 'Pig', 'Cow']},
+                    {q: '🐱', a: 'Cat', opts: ['Bird', 'Dog', 'Fish', 'Cat']},
+                    {q: '🚗', a: 'Car', opts: ['Bus', 'Car', 'Bike', 'Train']},
+                    {q: '🌞', a: 'Sun', opts: ['Moon', 'Star', 'Sun', 'Sky']},
+                    {q: '🔴', a: 'Red', opts: ['Blue', 'Red', 'Green', 'Yellow']},
+                    {q: '🔵', a: 'Blue', opts: ['Black', 'White', 'Blue', 'Pink']},
+                    {q: '1️⃣', a: 'One', opts: ['One', 'Two', 'Three', 'Four']},
+                    {q: '2️⃣', a: 'Two', opts: ['One', 'Two', 'Three', 'Four']},
+                    {q: '🐟', a: 'Fish', opts: ['Fish', 'Bird', 'Dog', 'Cat']}
+                ],
+                p2: [
+                    {q: '👁️', a: 'Eye', opts: ['Ear', 'Eye', 'Nose', 'Mouth']},
+                    {q: '👂', a: 'Ear', opts: ['Hair', 'Ear', 'Hand', 'Leg']},
+                    {q: '🍌', a: 'Banana', opts: ['Apple', 'Mango', 'Banana', 'Papaya']},
+                    {q: '🏃', a: 'Run', opts: ['Walk', 'Jump', 'Run', 'Sit']},
+                    {q: '🪑', a: 'Chair', opts: ['Table', 'Desk', 'Chair', 'Bed']},
+                    {q: '🏠', a: 'House', opts: ['School', 'House', 'Shop', 'Park']},
+                    {q: '✏️', a: 'Pencil', opts: ['Pen', 'Book', 'Pencil', 'Ruler']},
+                    {q: '🥛', a: 'Milk', opts: ['Water', 'Juice', 'Milk', 'Tea']},
+                    {q: '🖐️', a: 'Hand', opts: ['Foot', 'Hand', 'Arm', 'Head']},
+                    {q: '🌳', a: 'Tree', opts: ['Flower', 'Grass', 'Tree', 'Leaf']}
+                ],
+                p3: [
+                    {q: '👕', a: 'Shirt', opts: ['Pants', 'Skirt', 'Shirt', 'Hat']},
+                    {q: '🌧️', a: 'Rain', opts: ['Snow', 'Wind', 'Rain', 'Cloud']},
+                    {q: '🍔', a: 'Burger', opts: ['Pizza', 'Salad', 'Burger', 'Soup']},
+                    {q: '🏫', a: 'School', opts: ['Hospital', 'School', 'Bank', 'Zoo']},
+                    {q: '📅', a: 'Monday', opts: ['Sunday', 'Monday', 'Friday', 'Today']},
+                    {q: '🕰️', a: 'Time', opts: ['Day', 'Time', 'Year', 'Month']},
+                    {q: '🚲', a: 'Bicycle', opts: ['Car', 'Bicycle', 'Bus', 'Boat']},
+                    {q: '📖', a: 'Book', opts: ['Paper', 'Pen', 'Book', 'Bag']},
+                    {q: '⚽', a: 'Football', opts: ['Tennis', 'Football', 'Golf', 'Swim']},
+                    {q: '🛌', a: 'Sleep', opts: ['Eat', 'Play', 'Sleep', 'Read']}
+                ],
+                p4: [
+                    {q: '👨‍⚕️', a: 'Doctor', opts: ['Teacher', 'Nurse', 'Doctor', 'Police']},
+                    {q: '🧑‍🏫', a: 'Teacher', opts: ['Farmer', 'Teacher', 'Singer', 'Driver']},
+                    {q: '✈️', a: 'Airplane', opts: ['Train', 'Boat', 'Airplane', 'Bus']},
+                    {q: '🏞️', a: 'River', opts: ['Mountain', 'River', 'Forest', 'Sea']},
+                    {q: '🛒', a: 'Market', opts: ['School', 'Market', 'Hospital', 'Bank']},
+                    {q: '🍳', a: 'Cook', opts: ['Clean', 'Cook', 'Wash', 'Draw']},
+                    {q: '🏥', a: 'Hospital', opts: ['Temple', 'Market', 'Hospital', 'Hotel']},
+                    {q: '👮', a: 'Police', opts: ['Doctor', 'Police', 'Soldier', 'Pilot']},
+                    {q: '🌤️', a: 'Weather', opts: ['Rain', 'Wind', 'Weather', 'Storm']},
+                    {q: '💰', a: 'Money', opts: ['Coin', 'Bank', 'Money', 'Card']}
+                ],
+                p5: [
+                    {q: '🌍', a: 'Earth', opts: ['Moon', 'Sun', 'Star', 'Earth']},
+                    {q: '🔬', a: 'Science', opts: ['Math', 'Art', 'History', 'Science']},
+                    {q: '🎸', a: 'Guitar', opts: ['Piano', 'Drum', 'Violin', 'Guitar']},
+                    {q: '💻', a: 'Computer', opts: ['Phone', 'Radio', 'Computer', 'TV']},
+                    {q: '📰', a: 'Newspaper', opts: ['Book', 'Magazine', 'Newspaper', 'Letter']},
+                    {q: '🗣️', a: 'Speak', opts: ['Listen', 'Write', 'Speak', 'Read']},
+                    {q: '✈️', a: 'Airport', opts: ['Station', 'Port', 'Airport', 'Stop']},
+                    {q: '🏢', a: 'Building', opts: ['House', 'Tent', 'Building', 'Hut']},
+                    {q: '🌡️', a: 'Temperature',opts: ['Weather', 'Climate', 'Temperature', 'Heat']},
+                    {q: '⚖️', a: 'Lawyer', opts: ['Judge', 'Lawyer', 'Police', 'Mayor']}
+                ]
+            },
+            translate: {
+                p1: [
+                    {q: 'ແມວ', a: 'Cat', opts: ['Cat', 'Bat', 'Rat', 'Mat']},
+                    {q: 'ສີແດງ', a: 'Red', opts: ['Red', 'Bed', 'Led', 'Fed']},
+                    {q: 'ໝາ', a: 'Dog', opts: ['Dog', 'Log', 'Fog', 'Hog']},
+                    {q: 'ໜຶ່ງ', a: 'One', opts: ['One', 'Two', 'Sun', 'Run']},
+                    {q: 'ນົກ', a: 'Bird', opts: ['Bird', 'Word', 'Herd', 'Nerd']},
+                    {q: 'ໃຫຍ່', a: 'Big', opts: ['Big', 'Pig', 'Dig', 'Fig']},
+                    {q: 'ນ້ອຍ', a: 'Small', opts: ['Small', 'Tall', 'Ball', 'Fall']},
+                    {q: 'ດີ', a: 'Good', opts: ['Good', 'Wood', 'Hood', 'Food']},
+                    {q: 'ຜູ້ຊາຍ', a: 'Boy', opts: ['Boy', 'Toy', 'Joy', 'Girl']},
+                    {q: 'ຜູ້ຍິງ', a: 'Girl', opts: ['Girl', 'Boy', 'Man', 'Woman']}
+                ],
+                p2: [
+                    {q: 'ຂ້ອຍ', a: 'I', opts: ['I', 'You', 'He', 'She']},
+                    {q: 'ເຈົ້າ', a: 'You', opts: ['You', 'We', 'They', 'It']},
+                    {q: 'ມັກ', a: 'Like', opts: ['Like', 'Bike', 'Hike', 'Mike']},
+                    {q: 'ໄປ', a: 'Go', opts: ['Go', 'No', 'So', 'Do']},
+                    {q: 'ມາ', a: 'Come', opts: ['Come', 'Some', 'Home', 'Done']},
+                    {q: 'ກິນ', a: 'Eat', opts: ['Eat', 'Meat', 'Seat', 'Beat']},
+                    {q: 'ນ້ຳ', a: 'Water', opts: ['Water', 'Milk', 'Juice', 'Tea']},
+                    {q: 'ມື້ນີ້', a: 'Today', opts: ['Today', 'Play', 'Say', 'Day']},
+                    {q: 'ພໍ່', a: 'Father', opts: ['Father', 'Mother', 'Brother', 'Sister']},
+                    {q: 'ແມ່', a: 'Mother', opts: ['Mother', 'Father', 'Uncle', 'Aunt']}
+                ],
+                p3: [
+                    {q: 'ໂຮງຮຽນ', a: 'School', opts: ['School', 'Pool', 'Cool', 'Tool']},
+                    {q: 'ສະບາຍດີ', a: 'Hello', opts: ['Hello', 'Yellow', 'Bellow', 'Fellow']},
+                    {q: 'ຂອບໃຈ', a: 'Thank you', opts: ['Thank you', 'Sorry', 'Please', 'Excuse me']},
+                    {q: 'ຂໍໂທດ', a: 'Sorry', opts: ['Sorry', 'Worry', 'Hurry', 'Happy']},
+                    {q: 'ເພື່ອນ', a: 'Friend', opts: ['Friend', 'Send', 'Lend', 'Bend']},
+                    {q: 'ຫຼິ້ນ', a: 'Play', opts: ['Play', 'Stay', 'Tray', 'Pray']},
+                    {q: 'ຮຽນ', a: 'Study', opts: ['Study', 'Ready', 'Steady', 'Body']},
+                    {q: 'ຄູ', a: 'Teacher', opts: ['Teacher', 'Doctor', 'Farmer', 'Driver']},
+                    {q: 'ນັກຮຽນ', a: 'Student', opts: ['Student', 'Dentist', 'Artist', 'Pilot']},
+                    {q: 'ຕອນເຊົ້າ', a: 'Morning', opts: ['Morning', 'Evening', 'Night', 'Afternoon']}
+                ],
+                p4: [
+                    {q: 'ສະບາຍດີຕອນເຊົ້າ', a: 'Good morning', opts: ['Good morning', 'Good night', 'Good evening', 'Goodbye']},
+                    {q: 'ຂ້ອຍຊື່...', a: 'My name is...', opts: ['My name is...', 'Your name is...', 'His name is...', 'Her name is...']},
+                    {q: 'ເຈົ້າອາຍຸຈັກປີ?', a: 'How old are you?', opts: ['How old are you?', 'How are you?', 'Who are you?', 'Where are you?']},
+                    {q: 'ຢູ່ໃສ?', a: 'Where?', opts: ['Where?', 'When?', 'Why?', 'Who?']},
+                    {q: 'ເມື່ອໃດ?', a: 'When?', opts: ['When?', 'What?', 'Which?', 'How?']},
+                    {q: 'ຍ້ອນຫຍັງ?', a: 'Why?', opts: ['Why?', 'Who?', 'Where?', 'What?']},
+                    {q: 'ສີມ່ວງ', a: 'Purple', opts: ['Purple', 'Turtle', 'Circle', 'People']},
+                    {q: 'ງາມ', a: 'Beautiful', opts: ['Beautiful', 'Wonderful', 'Careful', 'Helpful']},
+                    {q: 'ສະອາດ', a: 'Clean', opts: ['Clean', 'Mean', 'Bean', 'Lean']},
+                    {q: 'ສົກກະປົກ', a: 'Dirty', opts: ['Dirty', 'Thirty', 'Party', 'City']}
+                ],
+                p5: [
+                    {q: 'ຂ້ອຍກຳລັງກິນເຂົ້າ', a: 'I am eating', opts: ['I am eating', 'I eat', 'I ate', 'I will eat']},
+                    {q: 'ລາວ (ຜູ້ຍິງ) ກຳລັງແລ່ນ', a: 'She is running', opts: ['She is running', 'He is running', 'They are running', 'It is running']},
+                    {q: 'ພວກເຂົາໄປໂຮງຮຽນ', a: 'They go to school', opts: ['They go to school', 'We go to school', 'You go to school', 'He goes to school']},
+                    {q: 'ອັນນີ້ແມ່ນຫຍັງ?', a: 'What is this?', opts: ['What is this?', 'Who is this?', 'Where is this?', 'How is this?']},
+                    {q: 'ຂ້ອຍບໍ່ມັກປາ', a: 'I do not like fish', opts: ['I do not like fish', 'I like fish', 'He does not like fish', 'We do not like fish']},
+                    {q: 'ອັນຕະລາຍ', a: 'Dangerous', opts: ['Dangerous', 'Generous', 'Fabulous', 'Marvelous']},
+                    {q: 'ສຳຄັນ', a: 'Important', opts: ['Important', 'Different', 'Excellent', 'Patient']},
+                    {q: 'ຍາກ', a: 'Difficult', opts: ['Difficult', 'Different', 'Direct', 'Distance']},
+                    {q: 'ງ່າຍ', a: 'Easy', opts: ['Easy', 'Busy', 'Lazy', 'Crazy']},
+                    {q: 'ຄວາມສຸກ', a: 'Happiness', opts: ['Happiness', 'Sadness', 'Business', 'Sickness']}
+                ]
+            },
+            grammar: {
+                p1: [
+                    {q: 'I ___ a boy.', a: 'am', opts: ['am', 'is', 'are', 'be']},
+                    {q: 'It ___ a dog.', a: 'is', opts: ['is', 'am', 'are', 'be']},
+                    {q: 'You ___ my friend.', a: 'are', opts: ['are', 'is', 'am', 'be']},
+                    {q: '___ is an apple.', a: 'This', opts: ['This', 'These', 'Those', 'They']},
+                    {q: 'I have ___ cat.', a: 'a', opts: ['a', 'an', 'the', 'some']},
+                    {q: 'It is ___ ant.', a: 'an', opts: ['an', 'a', 'the', 'some']},
+                    {q: 'He ___ sad.', a: 'is', opts: ['is', 'am', 'are', 'be']},
+                    {q: 'She ___ happy.', a: 'is', opts: ['is', 'am', 'are', 'be']},
+                    {q: '___ you happy?', a: 'Are', opts: ['Are', 'Is', 'Am', 'Do']},
+                    {q: 'I ___ not a girl.', a: 'am', opts: ['am', 'is', 'are', 'do']}
+                ],
+                p2: [
+                    {q: 'She ___ a cat.', a: 'has', opts: ['has', 'have', 'had', 'having']},
+                    {q: 'I ___ two eyes.', a: 'have', opts: ['have', 'has', 'had', 'having']},
+                    {q: '___ you like apples?', a: 'Do', opts: ['Do', 'Does', 'Are', 'Is']},
+                    {q: '___ he like bananas?', a: 'Does', opts: ['Does', 'Do', 'Is', 'Are']},
+                    {q: 'I do ___ like fish.', a: 'not', opts: ['not', 'no', 'none', 'nothing']},
+                    {q: '___ are you? I am fine.', a: 'How', opts: ['How', 'Who', 'What', 'Where']},
+                    {q: '___ is this? It is a book.', a: 'What', opts: ['What', 'Who', 'How', 'Where']},
+                    {q: 'The cat is ___ the box.', a: 'in', opts: ['in', 'on', 'at', 'under']},
+                    {q: 'The book is ___ the table.', a: 'on', opts: ['on', 'in', 'at', 'under']},
+                    {q: 'Look ___ the sky.', a: 'at', opts: ['at', 'in', 'on', 'to']}
+                ],
+                p3: [
+                    {q: 'I go to school ___ bus.', a: 'by', opts: ['by', 'on', 'in', 'with']},
+                    {q: 'He ___ football everyday.', a: 'plays', opts: ['plays', 'play', 'playing', 'played']},
+                    {q: 'They ___ TV now.', a: 'watch', opts: ['watch', 'watches', 'watching', 'watched']},
+                    {q: 'My mother ___ cooking.', a: 'is', opts: ['is', 'am', 'are', 'be']},
+                    {q: 'We ___ students.', a: 'are', opts: ['are', 'is', 'am', 'be']},
+                    {q: '___ is your name?', a: 'What', opts: ['What', 'Who', 'How', 'Where']},
+                    {q: '___ old are you?', a: 'How', opts: ['How', 'Who', 'What', 'Where']},
+                    {q: '___ are you from?', a: 'Where', opts: ['Where', 'Who', 'What', 'How']},
+                    {q: 'I ___ a book yesterday.', a: 'read', opts: ['read', 'reads', 'reading', 'will read']},
+                    {q: 'She ___ to the market.', a: 'went', opts: ['went', 'go', 'goes', 'going']}
+                ],
+                p4: [
+                    {q: 'He is playing ___ the garden.', a: 'in', opts: ['in', 'on', 'at', 'to']},
+                    {q: 'She ___ her homework every night.', a: 'does', opts: ['does', 'do', 'doing', 'did']},
+                    {q: 'We are ___ to the park.', a: 'going', opts: ['going', 'go', 'goes', 'went']},
+                    {q: 'Can you ___ me?', a: 'help', opts: ['help', 'helps', 'helping', 'helped']},
+                    {q: 'I ___ swim.', a: 'can', opts: ['can', 'am', 'do', 'is']},
+                    {q: '___ time is it?', a: 'What', opts: ['What', 'When', 'How', 'Which']},
+                    {q: 'There ___ a pen on the desk.', a: 'is', opts: ['is', 'are', 'am', 'be']},
+                    {q: 'There ___ many apples.', a: 'are', opts: ['are', 'is', 'am', 'be']},
+                    {q: 'I like apples ___ bananas.', a: 'and', opts: ['and', 'but', 'or', 'so']},
+                    {q: 'I am tired, ___ I will sleep.', a: 'so', opts: ['so', 'but', 'and', 'or']}
+                ],
+                p5: [
+                    {q: 'He ___ playing football now.', a: 'is', opts: ['is', 'am', 'are', 'was']},
+                    {q: 'They ___ eating dinner at 7 PM yesterday.', a: 'were', opts: ['were', 'was', 'are', 'is']},
+                    {q: 'I have ___ to London.', a: 'been', opts: ['been', 'go', 'went', 'going']},
+                    {q: 'She ___ already finished her work.', a: 'has', opts: ['has', 'have', 'had', 'having']},
+                    {q: 'If it rains, I ___ stay at home.', a: 'will', opts: ['will', 'would', 'can', 'could']},
+                    {q: 'The book ___ written by him.', a: 'was', opts: ['was', 'is', 'were', 'are']},
+                    {q: 'He is ___ taller than me.', a: 'much', opts: ['much', 'more', 'many', 'most']},
+                    {q: 'This is the ___ book I have ever read.', a: 'best', opts: ['best', 'good', 'better', 'well']},
+                    {q: 'I am looking forward to ___ you.', a: 'seeing', opts: ['seeing', 'see', 'saw', 'seen']},
+                    {q: 'She asked me where I ___ going.', a: 'was', opts: ['was', 'am', 'is', 'were']}
+                ]
+            },
+            listen: {
+                // ສຳລັບໝວດຟັງ, ໃຊ້ຄຳສັບດຽວກັນກັບ Vocab ແຕ່ປິດຮູບພາບ ໃຫ້ຟັງສຽງແທນ
+                p1: [], p2: [], p3: [], p4: [], p5: [] 
+            }
+        };
+
+        // ຄັດລອກຂໍ້ມູນ Vocab ມາໃສ່ Listen ໂດຍອັດຕະໂນມັດ
+        ['p1', 'p2', 'p3', 'p4', 'p5'].forEach(lvl => {
+            QUESTION_BANK.listen[lvl] = QUESTION_BANK.vocab[lvl].map(item => ({
+                q: 'listen_mode', 
+                a: item.a, 
+                opts: item.opts,
+                lao: item.q // ເກັບຮູບໄວ້ເປັນຕົວຊ່ວຍຖ້າຈຳເປັນ
+            }));
+        });
+
+
+        function startGame(mode) {
+            playSound('click');
+            currentMode = mode;
+            currentQuestion = 0;
+            score = 0;
+            isAnswering = false;
+            
+            // ດຶງຄຳຖາມຕາມ Mode ແລະ ຄວາມຍາກ ມາສັບຊ້ອນກັນ
+            let sourceQuestions = QUESTION_BANK[mode][playerData.difficulty];
+            // Shuffle ອາເຣແລ້ວເລືອກມາ 10 ຂໍ້
+            currentQuestionList = [...sourceQuestions].sort(() => Math.random() - 0.5).slice(0, 10);
+            // ຖ້າຄຳຖາມບໍ່ຮອດ 10 ຂໍ້ (ເຊິ່ງໃນ DB ເຮັດໄວ້ 10 ຂໍ້ພໍດີ), ມັນກໍຈະເອົາເທົ່າທີ່ມີ
+            totalQuestions = currentQuestionList.length;
+
+            document.getElementById('game-score').textContent = score;
+            showScreen('screen-game');
+            renderQuestion();
+        }
+
+        function shuffleOptions(options) {
+            return [...options].sort(() => Math.random() - 0.5);
+        }
+
+        function renderQuestion() {
+            stopQuestionAudio();
+            isAnswering = false;
+            const q = currentQuestionList[currentQuestion];
+            
+            // ອັບເດດ UI
+            document.getElementById('current-question-num').textContent = currentQuestion + 1;
+            const progressPct = ((currentQuestion) / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPct}%`;
+            
+            const qText = document.getElementById('question-text');
+            const subText = document.getElementById('question-subtext');
+            const visualAid = document.getElementById('visual-aid');
+            const listenBtn = document.getElementById('listen-btn');
+            listenBtn.disabled = false;
+            
+            // ຣີເຊັດການສະແດງຜົນ
+            visualAid.classList.add('hidden');
+            listenBtn.classList.add('hidden');
+            subText.classList.add('hidden');
+            
+            if (currentMode === 'vocab') {
+                visualAid.textContent = q.q; // ສະແດງ Emoji
+                visualAid.classList.remove('hidden');
+                qText.innerHTML = "What is this?";
+            } else if (currentMode === 'translate') {
+                qText.innerHTML = `"${q.q}"`; // ສະແດງຄຳລາວ
+                qText.classList.remove('english-text');
+                qText.classList.add('text-4xl');
+                subText.textContent = "ແປວ່າຫຍັງໃນພາສາອັງກິດ?";
+                subText.classList.remove('hidden');
+            } else if (currentMode === 'grammar') {
+                // ເຮັດໃຫ້ຊ່ອງຫວ່າງເດັ່ນຂຶ້ນ
+                qText.innerHTML = q.q.replace('___', '<span class="text-blue-500 border-b-4 border-blue-500 px-4">___</span>');
+                qText.classList.add('english-text');
+            } else if (currentMode === 'listen') {
+                listenBtn.classList.remove('hidden');
+                qText.innerHTML = "ຟັງແລ້ວເລືອກຄຳສັບ";
+                qText.classList.remove('english-text');
+                subText.textContent = 'ກົດລຳໂພງເພື່ອຟັງຄຳສັບ';
+                subText.classList.remove('hidden');
+            }
+
+            // ສ້າງປຸ່ມຄຳຕອບ
+            const container = document.getElementById('answers-container');
+            container.innerHTML = '';
+            
+            let shuffledOpts = shuffleOptions(q.opts);
+
+            shuffledOpts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-cartoon bg-white text-blue-600 font-bold text-2xl sm:text-3xl py-5 rounded-3xl border-4 border-blue-200 hover:bg-blue-50 hover:border-blue-300 shadow-md transition-colors english-text flex justify-center items-center";
+                
+                const optionIcon = currentMode === 'listen'
+                    ? ''
+                    : ' <i class="fa-solid fa-volume-up text-blue-300 text-xl ml-3 opacity-60"></i>';
+                btn.innerHTML = `<span>${opt}</span>${optionIcon}`;
+                
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+
+            // ເຊື່ອງ Feedback ເກົ່າ
+            const fb = document.getElementById('feedback-msg');
+            fb.style.opacity = '0';
+        }
+
+        function checkAnswer(selectedAns, btnElement) {
+            if (isAnswering) return;
+            isAnswering = true;
+            
+            // ອ່ານອອກສຽງພາສາອັງກິດທັນທີທີ່ກົດເລືອກຄຳຕອບ!
+            if (currentMode === 'listen') {
+                stopQuestionAudio();
+                document.getElementById('listen-btn').disabled = true;
+            } else {
+                speakText(selectedAns);
+            }
+            
+            const q = currentQuestionList[currentQuestion];
+            const isCorrect = selectedAns === q.a;
+            const fb = document.getElementById('feedback-msg');
+            const qText = document.getElementById('question-text');
+
+            // ປິດປຸ່ມອື່ນໆ
+            Array.from(document.getElementById('answers-container').children).forEach(b => {
+                if(b !== btnElement) b.classList.add('disabled');
+            });
+
+            if (isCorrect) {
+                playSound('correct');
+                score++;
+                document.getElementById('game-score').textContent = score;
+                
+                btnElement.classList.remove('bg-white', 'border-blue-200', 'text-blue-600');
+                btnElement.classList.add('bg-green-400', 'border-green-600', 'text-white', 'animate-pop');
+                
+                if (currentMode === 'grammar') {
+                    qText.innerHTML = q.q.replace('___', `<span class="text-green-500 font-black animate-pop">${q.a}</span>`);
+                }
+                
+                fb.innerHTML = '⭐ Excellent! 🎉';
+                fb.className = "absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-700 border-green-400 border-2 px-6 py-2 rounded-full font-bold text-xl shadow-lg transition-opacity duration-300 whitespace-nowrap z-10 animate-bounce-slow english-text";
+                fb.style.opacity = '1';
+                
+                createConfetti(15);
+                setTimeout(nextQuestion, 1500);
+            } else {
+                playSound('wrong');
+                btnElement.classList.remove('bg-white', 'border-blue-200');
+                btnElement.classList.add('bg-red-300', 'border-red-500', 'text-white', 'animate-shake');
+                
+                // ຄຳແນະນຳທາງບວກ
+                const encouragements = ['Try again! 😊', 'Almost! ✌️', 'Think again! 🧠'];
+                fb.innerHTML = encouragements[Math.floor(Math.random() * encouragements.length)];
+                fb.className = "absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-rose-100 text-rose-700 border-rose-400 border-2 px-6 py-2 rounded-full font-bold text-lg shadow-lg transition-opacity duration-300 whitespace-nowrap z-10 english-text";
+                fb.style.opacity = '1';
+                
+                // ປົດລັອກໃຫ້ກົດໃໝ່ໄດ້
+                setTimeout(() => {
+                    isAnswering = false;
+                    fb.style.opacity = '0';
+                    btnElement.classList.remove('bg-red-300', 'border-red-500', 'text-white', 'animate-shake');
+                    btnElement.classList.add('bg-white', 'border-blue-200');
+                    Array.from(document.getElementById('answers-container').children).forEach(b => {
+                        b.classList.remove('disabled');
+                    });
+                }, 1200);
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < totalQuestions) {
+                renderQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function confirmExit() {
+            showScreen('screen-levels');
+        }
+
+        function endGame() {
+            playSound('win');
+            document.getElementById('progress-bar').style.width = `100%`;
+            
+            setTimeout(() => {
+                showScreen('screen-summary');
+                createConfetti(100);
+                
+                const modeNames = {
+                    'vocab': 'Vocabulary - ຮຽນຮູ້ຄຳສັບ',
+                    'translate': 'Translate - ຝຶກແປພາສາ',
+                    'grammar': 'Grammar - ຕື່ມຄຳໃນຊ່ອງຫວ່າງ',
+                    'listen': 'Listening - ຟັງແລ້ວເລືອກຄຳຕອບ'
+                };
+                document.getElementById('summary-mode-name').textContent = modeNames[currentMode];
+                document.getElementById('summary-correct').textContent = score;
+                document.getElementById('summary-stars').textContent = score;
+                
+                const icon = document.getElementById('summary-icon');
+                if (score === totalQuestions) icon.textContent = '👑';
+                else if (score >= totalQuestions*0.7) icon.textContent = '🌟';
+                else if (score >= totalQuestions*0.4) icon.textContent = '👍';
+                else icon.textContent = '💪';
+                
+                playerData.totalStars += score;
+                checkNewBadges();
+                saveData();
+                
+            }, 500);
+        }
+
+        function checkNewBadges() {
+            const newBadgeMsg = document.getElementById('new-badge-msg');
+            newBadgeMsg.classList.add('hidden');
+            let unlockedNew = false;
+            
+            BADGES.forEach(badge => {
+                if (playerData.totalStars >= badge.reqStars && !playerData.badges.includes(badge.id)) {
+                    playerData.badges.push(badge.id);
+                    unlockedNew = true;
+                }
+            });
+            
+            if (unlockedNew) {
+                newBadgeMsg.classList.remove('hidden');
+                playSound('win'); 
+            }
+        }
+
+        function playAgain() {
+            startGame(currentMode);
+        }
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createConfetti(amount) {
+            const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d', '#3b82f6', '#10b981'];
+            for (let i = 0; i < amount; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 50,
+                    r: Math.random() * 6 + 4,
+                    dx: Math.random() * 10 - 5,
+                    dy: Math.random() * -10 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05,
+                    tiltAngle: 0
+                });
+            }
+            if(particles.length === amount) { 
+                requestAnimationFrame(renderConfetti);
+            }
+        }
+
+        function renderConfetti() {
+            if (particles.length === 0) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.tiltAngle += p.tiltAngleInc;
+                p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+                p.x += Math.sin(p.tiltAngle) * 2;
+                p.dy += 0.2; 
+                p.y += p.dy;
+                p.x += p.dx;
+
+                ctx.beginPath();
+                ctx.lineWidth = p.r;
+                ctx.strokeStyle = p.color;
+                ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                ctx.stroke();
+            }
+            particles = particles.filter(p => p.y < canvas.height + 100);
+            if (particles.length > 0) {
+                requestAnimationFrame(renderConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        window.onload = () => {
+            loadData();
+            // Initialize Audio and Speech synthesis on first interaction (required by browsers)
+            const initAudio = () => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if ('speechSynthesis' in window) {
+                    // Create a dummy utterance to initialize the engine
+                    let msg = new SpeechSynthesisUtterance('');
+                    msg.volume = 0;
+                    window.speechSynthesis.speak(msg);
+                }
+                document.body.removeEventListener('touchstart', initAudio);
+                document.body.removeEventListener('click', initAudio);
+            };
+            document.body.addEventListener('touchstart', initAudio, {once:true});
+            document.body.addEventListener('click', initAudio, {once:true});
+        };
+
+    </script>
+</body>
+</html>

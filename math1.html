@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Adventure - ຜະຈົນໄພໂລກຄະນິດສາດ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- ໃຊ້ Font Awesome ສຳລັບ Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans Lao', sans-serif;
+            background-color: #ffffff;
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 30px 30px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation; /* ປ້ອງກັນການຊູມເວລາແຕະໄວໆ */
+            user-select: none;
+        }
+
+        /* ປຸ່ມແບບ Cartoon 3D */
+        .btn-cartoon {
+            transition: all 0.1s ease;
+            box-shadow: 0 6px 0px rgba(0,0,0,0.2);
+            position: relative;
+            top: 0;
+        }
+        .btn-cartoon:active {
+            top: 6px;
+            box-shadow: 0 0px 0px rgba(0,0,0,0.2);
+        }
+
+        /* ອານິເມຊັນດາວ ແລະ ສິ່ງຂອງ */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-slow {
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* ປິດ/ເປີດ ໜ້າຈໍ */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* ຮູບພາບໝາກໄມ້/ສັດສຳລັບການນັບ */
+        .item-icon {
+            font-size: 2rem;
+            margin: 2px;
+            display: inline-block;
+        }
+        
+        .progress-bar-inner {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <!-- ໜ້າຫຼັກ -->
+    <div id="screen-home" class="screen active flex-col items-center w-full max-w-md animate-pop text-center">
+        <h1 class="text-4xl md:text-5xl font-black text-slate-800 drop-shadow-sm mb-2 mt-8 leading-tight">
+            Math Adventure<br>
+            <span class="text-2xl text-blue-500">ຜະຈົນໄພໂລກຄະນິດສາດ</span>
+        </h1>
+        
+        <div class="text-6xl my-6 animate-bounce-slow">
+            🦊🦉🐻
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm border-4 border-slate-100 relative mt-4">
+            <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-yellow-100 rounded-full py-1 px-4 border-2 border-yellow-400 shadow-sm flex gap-3 w-max">
+                <div class="font-bold text-yellow-700">⭐ <span id="home-total-stars">0</span> ດາວ</div>
+                <div class="text-sm font-bold text-blue-600 border-l-2 border-yellow-300 pl-3" id="home-highest-badge">🥉 ຜູ້ເລີ່ມຕົ້ນ</div>
+            </div>
+
+            <div class="space-y-4 w-full mt-2">
+                <button onclick="showScreen('screen-levels')" class="btn-cartoon w-full bg-green-500 hover:bg-green-400 text-white font-bold py-4 px-6 rounded-2xl text-2xl border-2 border-green-600">
+                    <i class="fa-solid fa-play mr-2"></i> ເລີ່ມຫຼິ້ນ
+                </button>
+                <button onclick="showScreen('screen-stats')" class="btn-cartoon w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-2xl text-xl border-2 border-blue-600">
+                    <i class="fa-solid fa-trophy mr-2"></i> ຄະແນນຂອງຂ້ອຍ
+                </button>
+            </div>
+        </div>
+        
+        <!-- Settings (ຄວາມຍາກ) -->
+        <div class="mt-6 flex items-center bg-white border-2 border-slate-200 px-4 py-2 rounded-full shadow-sm">
+            <span class="mr-2 font-bold text-gray-700">ລະດັບຊັ້ນ:</span>
+            <select id="difficulty-select" onchange="saveDifficulty()" class="bg-transparent font-bold text-indigo-600 outline-none cursor-pointer">
+                <option value="p1">ປ.1 (ເລກ 0-20)</option>
+                <option value="p2">ປ.2 (ເລກ 0-100)</option>
+                <option value="p3">ປ.3 (ຫຼັກພັນ & ຄູນ/ຫານ)</option>
+                <option value="p4">ປ.4 (ຫຼັກໝື່ນ)</option>
+                <option value="p5">ປ.5 (ເລກທົດສະນິຍົມ)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ໜ້າເລືອກລະດັບ (ໝວດໝູ່ເກມ) -->
+    <div id="screen-levels" class="screen flex-col items-center w-full max-w-md hidden text-center">
+        <button onclick="showScreen('screen-home')" class="self-start text-slate-600 hover:text-slate-800 text-lg font-bold mb-4 bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-full transition-colors">
+            <i class="fa-solid fa-arrow-left"></i> ກັບຄືນ
+        </button>
+        
+        <h2 class="text-3xl font-black text-slate-800 mb-6">ເລືອກດ່ານຜະຈົນໄພ</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full px-2">
+            <!-- Level 1: ບວກ -->
+            <button onclick="startGame(1)" class="btn-cartoon bg-rose-400 hover:bg-rose-300 text-white rounded-3xl p-4 flex items-center justify-between border-4 border-rose-500">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner">
+                        ➕
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-xl">LEVEL 1</div>
+                        <div class="font-semibold text-rose-100 text-sm">ການບວກ</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Level 2: ລົບ -->
+            <button onclick="startGame(2)" class="btn-cartoon bg-cyan-400 hover:bg-cyan-300 text-white rounded-3xl p-4 flex items-center justify-between border-4 border-cyan-500">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner">
+                        ➖
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-xl">LEVEL 2</div>
+                        <div class="font-semibold text-cyan-100 text-sm">ການລົບ</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Level 3: ປຽບທຽບ -->
+            <button onclick="startGame(3)" class="btn-cartoon bg-amber-400 hover:bg-amber-300 text-white rounded-3xl p-4 flex items-center justify-between border-4 border-amber-500">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner">
+                        ⚖️
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-xl">LEVEL 3</div>
+                        <div class="font-semibold text-amber-100 text-sm">ປຽບທຽບ</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Level 4: ໂຈດບັນຫາ -->
+            <button onclick="startGame(4)" class="btn-cartoon bg-purple-400 hover:bg-purple-300 text-white rounded-3xl p-4 flex items-center justify-between border-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner">
+                        🍎
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-xl">LEVEL 4</div>
+                        <div class="font-semibold text-purple-100 text-sm">ໂຈດບັນຫາ</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Level 5: ຄູນ -->
+            <button onclick="startGame(5)" class="btn-cartoon bg-emerald-400 hover:bg-emerald-300 text-white rounded-3xl p-4 flex items-center justify-between border-4 border-emerald-500">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner">
+                        ✖️
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-xl">LEVEL 5</div>
+                        <div class="font-semibold text-emerald-100 text-sm">ການຄູນ</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Level 6: ຫານ -->
+            <button onclick="startGame(6)" class="btn-cartoon bg-orange-400 hover:bg-orange-300 text-white rounded-3xl p-4 flex items-center justify-between border-4 border-orange-500">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner">
+                        ➗
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-xl">LEVEL 6</div>
+                        <div class="font-semibold text-orange-100 text-sm">ການຫານ</div>
+                    </div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ໜ້າຫຼິ້ນເກມ -->
+    <div id="screen-game" class="screen flex-col items-center w-full max-w-md hidden">
+        <!-- Top Bar -->
+        <div class="w-full flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border-2 border-slate-100">
+            <button onclick="confirmExit()" class="text-gray-500 hover:text-gray-700 font-bold bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="flex-1 px-4">
+                <div class="h-4 w-full bg-slate-100 rounded-full overflow-hidden border-2 border-slate-200 shadow-inner">
+                    <div id="progress-bar" class="h-full bg-green-500 progress-bar-inner w-0 relative">
+                        <div class="absolute inset-0 bg-white/20 w-full h-1"></div>
+                    </div>
+                </div>
+                <div class="text-center text-xs font-bold text-slate-500 mt-1">ຂໍ້ <span id="current-question-num">1</span>/10</div>
+            </div>
+
+            <div class="bg-yellow-100 px-3 py-1 rounded-full font-bold text-yellow-600 border-2 border-yellow-300 shadow-sm flex items-center">
+                <i class="fa-solid fa-star text-yellow-500 mr-1"></i> <span id="game-score">0</span>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="bg-white w-full rounded-3xl p-6 shadow-xl text-center min-h-[220px] flex flex-col justify-center relative mb-6 border-4 border-slate-100">
+            <!-- ພື້ນທີ່ສຳລັບຮູບພາບປະກອບ (ສຳລັບ Level 3 ແລະ 4) -->
+            <div id="visual-aid" class="mb-4 hidden flex-wrap justify-center gap-2"></div>
+            
+            <div id="question-text" class="text-4xl sm:text-5xl font-black text-slate-700 tracking-wider">
+                <!-- ຄຳຖາມຈະສະແດງຢູ່ໜີ້ -->
+                2 + 3 = ?
+            </div>
+
+            <!-- Message box ສຳລັບຄຳຕິຊົມ -->
+            <div id="feedback-msg" class="absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-white px-6 py-2 rounded-full font-bold text-lg shadow-lg opacity-0 transition-opacity duration-300 border-2 whitespace-nowrap">
+                <!-- Feedback -->
+            </div>
+        </div>
+
+        <!-- Answer Area (Options) -->
+        <div id="answers-container" class="grid grid-cols-2 gap-4 w-full">
+            <!-- ປຸ່ມຄຳຕອບຈະຖືກສ້າງດ້ວຍ JS -->
+        </div>
+    </div>
+
+    <!-- ໜ້າສະຫຼຸບຜົນ (Game Over) -->
+    <div id="screen-summary" class="screen flex-col items-center w-full max-w-md hidden text-center animate-pop">
+        <h2 class="text-4xl font-black text-slate-800 mb-2">ສຳເລັດແລ້ວ!</h2>
+        <p class="text-blue-700 text-lg mb-6 font-bold bg-blue-100 px-4 py-1 rounded-full border-2 border-blue-200">ດ່ານ: <span id="summary-level-name">LEVEL 1</span></p>
+
+        <div class="bg-white rounded-3xl p-8 shadow-2xl w-full relative border-4 border-yellow-300">
+            <!-- Badge ອີງຕາມຄະແນນ -->
+            <div id="summary-icon" class="text-7xl absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-100 rounded-full w-24 h-24 flex items-center justify-center border-4 border-white shadow-lg animate-bounce-slow">
+                🏆
+            </div>
+
+            <div class="mt-8 mb-6">
+                <p class="text-gray-500 font-bold mb-1">ຕອບຖືກ</p>
+                <div class="text-5xl font-black text-green-500"><span id="summary-correct">8</span><span class="text-3xl text-gray-400">/10</span></div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-2xl p-4 mb-6 border-2 border-yellow-200">
+                <p class="text-yellow-700 font-bold mb-2">ດາວທີ່ໄດ້ຮັບຮອບນີ້</p>
+                <div class="text-4xl font-black text-yellow-500">
+                    +<span id="summary-stars">8</span> ⭐
+                </div>
+            </div>
+
+            <div id="new-badge-msg" class="hidden bg-blue-100 text-blue-700 p-2 rounded-xl mb-6 font-bold animate-pulse border-2 border-blue-300">
+                🎉 ປົດລັອກຍົດໃໝ່ແລ້ວ! 🎉
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="playAgain()" class="btn-cartoon w-full bg-green-500 hover:bg-green-400 text-white font-bold py-4 px-6 rounded-2xl text-xl border-2 border-green-600">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> ຫຼິ້ນອີກຄັ້ງ
+                </button>
+                <button onclick="showScreen('screen-levels')" class="btn-cartoon w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-2xl text-lg border-2 border-blue-600">
+                    <i class="fa-solid fa-list mr-2"></i> ເລືອກດ່ານອື່ນ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ໜ້າສະຖິຕິ (Stats / Badges) -->
+    <div id="screen-stats" class="screen flex-col items-center w-full max-w-md hidden text-center">
+        <button onclick="showScreen('screen-home')" class="self-start text-slate-600 hover:text-slate-800 text-lg font-bold mb-4 bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-full transition-colors">
+            <i class="fa-solid fa-arrow-left"></i> ກັບຄືນ
+        </button>
+
+        <h2 class="text-3xl font-black text-slate-800 mb-6">ຄະແນນສະສົມຂອງຂ້ອຍ</h2>
+
+        <div class="bg-white rounded-3xl p-6 shadow-xl w-full border-4 border-slate-100 mb-6">
+            <div class="text-6xl text-yellow-400 mb-2">⭐</div>
+            <div class="text-sm font-bold text-gray-500 uppercase">ດາວທັງໝົດ</div>
+            <div class="text-5xl font-black text-slate-800" id="stats-total-stars">0</div>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-700 mb-4 w-full text-left px-2">ຫຼຽນລາງວັນ (Badges)</h3>
+        
+        <div class="grid grid-cols-3 gap-3 w-full px-2" id="badges-container">
+            <!-- Badges ຈະຖືກ Render ຜ່ານ JS -->
+        </div>
+    </div>
+
+    <!-- ແຄນວາດສຳລັບ Confetti Effect -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Audio Elements (Using HTML5 Web Audio API in JS later, but base sounds defined here if needed. We will use short generated tones to avoid external dependencies) -->
+
+    <script>
+        
+        // --- ຕົວປ່ຽນສະຖານະຂອງເກມ (Game State) ---
+        let currentLevel = 1;
+        let currentQuestion = 0;
+        let score = 0;
+        let totalQuestions = 10;
+        let questions = [];
+        let isAnswering = false; // ປ້ອງກັນການກົດຫຼາຍຄັ້ງ
+        
+        // ຂໍ້ມູນຜູ້ຫຼິ້ນ (ໂຫຼດຈາກ LocalStorage)
+        let playerData = {
+            totalStars: 0,
+            difficulty: 'p1', // 'p1' (0-20), 'p2' (0-100)
+            badges: [] // ບັນຈຸ ID ຂອງ badge ທີ່ປົດລັອກແລ້ວ
+        };
+
+        // ຂໍ້ມູນ Badges
+        const BADGES = [
+            { id: 'beginner', name: 'ຜູ້ເລີ່ມຕົ້ນ', icon: '🥉', reqStars: 0, desc: 'ຍິນດີຕ້ອນຮັບ!' },
+            { id: 'explorer', name: 'ນັກສຳຫຼວດ', icon: '🥈', reqStars: 50, desc: 'ໄດ້ດາວ 50 ດວງ' },
+            { id: 'champion', name: 'ແຊ້ມຄະນິດສາດ', icon: '🥇', reqStars: 150, desc: 'ໄດ້ດາວ 150 ດວງ' },
+            { id: 'master', name: 'ປໍລະມະຈານ', icon: '👑', reqStars: 300, desc: 'ໄດ້ດາວ 300 ດວງ' },
+            { id: 'legend', name: 'ຕຳນານ', icon: '🌟', reqStars: 500, desc: 'ໄດ້ດາວ 500 ດວງ' }
+        ];
+
+        const ITEMS_EMOJI = ['🍎', '🍌', '🍓', '🐶', '🐱', '⚽', '🚗', '⭐', '🎈', '🖍️'];
+
+        // --- ລະບົບສຽງ (Web Audio API) ---
+        // ສ້າງສຽງສັ້ນໆໃນຕົວເພື່ອບໍ່ຕ້ອງເພິ່ງພາໄຟລ໌ mp3 ພາຍນອກ ແລະໃຊ້ງານ offline ໄດ້
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                // ສຽງຕິ້ງ ດີໃຈ (High pitch chime)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                // ສຽງຕຶດ ຜິດ (Low pitch buzz)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                // ສຽງກົດປຸ່ມ
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'win') {
+                // ສຽງຊະນະ (Arpeggio)
+                const freqs = [400, 500, 600, 800];
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'sine';
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = f;
+                    g.gain.setValueAtTime(0.2, audioCtx.currentTime + (i*0.1));
+                    g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i*0.1) + 0.3);
+                    o.start(audioCtx.currentTime + (i*0.1));
+                    o.stop(audioCtx.currentTime + (i*0.1) + 0.3);
+                });
+            }
+        }
+
+        
+        // --- ຈັດການ LocalStorage ---
+        function loadData() {
+            const saved = localStorage.getItem('mathAdventureData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // ໂຫຼດຂໍ້ມູນ ພ້ອມອັບເດດໂຄງສ້າງໃໝ່ຖ້າຈຳເປັນ
+                    playerData = { ...playerData, ...parsed };
+                } catch(e) { console.error("Error loading data"); }
+            }
+            
+            // ຮັບປະກັນວ່າມີ badge ແຮກ
+            if(playerData.badges.length === 0) {
+                playerData.badges.push('beginner');
+            }
+            
+            // ອັບເດດ UI
+            document.getElementById('difficulty-select').value = playerData.difficulty;
+            updateHomeUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('mathAdventureData', JSON.stringify(playerData));
+            updateHomeUI();
+        }
+
+        function saveDifficulty() {
+            playerData.difficulty = document.getElementById('difficulty-select').value;
+            saveData();
+            playSound('click');
+        }
+
+        // --- ຈັດການໜ້າຈໍ (Navigation) ---
+        function showScreen(screenId) {
+            playSound('click');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            if (screenId === 'screen-stats') {
+                renderBadges();
+            }
+        }
+
+        function updateHomeUI() {
+            document.getElementById('home-total-stars').textContent = playerData.totalStars;
+            document.getElementById('stats-total-stars').textContent = playerData.totalStars;
+            
+            // ຫາ Badge ສູງສຸດ
+            let highestBadge = BADGES[0];
+            for (let i = BADGES.length - 1; i >= 0; i--) {
+                if (playerData.badges.includes(BADGES[i].id)) {
+                    highestBadge = BADGES[i];
+                    break;
+                }
+            }
+            document.getElementById('home-highest-badge').innerHTML = `${highestBadge.icon} ${highestBadge.name}`;
+        }
+
+        function renderBadges() {
+            const container = document.getElementById('badges-container');
+            container.innerHTML = '';
+            
+            BADGES.forEach(badge => {
+                const isUnlocked = playerData.badges.includes(badge.id);
+                
+                const badgeEl = document.createElement('div');
+                badgeEl.className = `flex flex-col items-center justify-center p-3 rounded-2xl ${isUnlocked ? 'bg-white shadow border-2 border-yellow-300' : 'bg-slate-100 border-2 border-slate-200 opacity-60 grayscale'}`;
+                
+                badgeEl.innerHTML = `
+                    <div class="text-4xl mb-1 ${isUnlocked ? 'animate-bounce-slow' : ''}">${badge.icon}</div>
+                    <div class="text-xs font-bold text-center ${isUnlocked ? 'text-gray-700' : 'text-gray-400'}">${badge.name}</div>
+                    ${!isUnlocked ? `<div class="text-[10px] text-gray-500 mt-1">⭐ ${badge.reqStars}</div>` : ''}
+                `;
+                container.appendChild(badgeEl);
+            });
+        }
+
+        
+        // --- ລະບົບສ້າງຄຳຖາມ (Question Generator) ---
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateQuestions(level) {
+            let diff = playerData.difficulty;
+            let qList = [];
+            let usedSignatures = new Set();
+            
+            while (qList.length < totalQuestions) {
+                let q = null;
+                let sig = '';
+                let isDec = (diff === 'p5' && level !== 3 && level !== 4); // ປ.5 ຈະເນັ້ນເລກທົດສະນິຍົມໃນການຄິດໄລ່
+                
+                if (level === 1) { // ບວກ
+                    let a, b, ans;
+                    if (diff === 'p1') { a = getRandomInt(1, 15); b = getRandomInt(1, 20-a); }
+                    else if (diff === 'p2') { a = getRandomInt(10, 80); b = getRandomInt(10, 99-a); }
+                    else if (diff === 'p3') { a = getRandomInt(100, 800); b = getRandomInt(100, 999-a); }
+                    else if (diff === 'p4') { a = getRandomInt(1000, 8000); b = getRandomInt(1000, 9999-a); }
+                    else { a = getRandomInt(10, 99)/10; b = getRandomInt(10, 99)/10; isDec = true; } // ປ.5 ທົດສະນິຍົມ
+                    
+                    ans = isDec ? parseFloat((a + b).toFixed(1)) : a + b;
+                    sig = `${a}+${b}`;
+                    if (!usedSignatures.has(sig)) {
+                        q = { type: 'equation', text: `${a} + ${b} = ?`, answer: ans, options: generateOptions(ans, isDec) };
+                    }
+                } 
+                else if (level === 2) { // ລົບ
+                    let a, b, ans;
+                    if (diff === 'p1') { a = getRandomInt(5, 20); b = getRandomInt(1, a-1); }
+                    else if (diff === 'p2') { a = getRandomInt(20, 99); b = getRandomInt(10, a-1); }
+                    else if (diff === 'p3') { a = getRandomInt(200, 999); b = getRandomInt(50, a-1); }
+                    else if (diff === 'p4') { a = getRandomInt(2000, 9999); b = getRandomInt(500, a-1); }
+                    else { a = getRandomInt(50, 99)/10; b = getRandomInt(10, a*10-1)/10; isDec = true; }
+                    
+                    ans = isDec ? parseFloat((a - b).toFixed(1)) : a - b;
+                    sig = `${a}-${b}`;
+                    if (!usedSignatures.has(sig)) {
+                        q = { type: 'equation', text: `${a} - ${b} = ?`, answer: ans, options: generateOptions(ans, isDec) };
+                    }
+                }
+                else if (level === 3) { // ປຽບທຽບ
+                    let a, b;
+                    if (diff === 'p1') { a = getRandomInt(1, 20); b = getRandomInt(1, 20); }
+                    else if (diff === 'p2') { a = getRandomInt(10, 100); b = getRandomInt(10, 100); }
+                    else if (diff === 'p3') { a = getRandomInt(100, 1000); b = getRandomInt(100, 1000); }
+                    else if (diff === 'p4') { a = getRandomInt(1000, 10000); b = getRandomInt(1000, 10000); }
+                    else { a = getRandomInt(1, 99)/10; b = getRandomInt(1, 99)/10; }
+                    
+                    if(Math.random() > 0.8) b = a; 
+                    
+                    sig = `${a}cmp${b}`;
+                    if (!usedSignatures.has(sig)) {
+                        let ans = a > b ? '>' : (a < b ? '<' : '=');
+                        let item = ITEMS_EMOJI[getRandomInt(0, ITEMS_EMOJI.length - 1)];
+                        q = {
+                            type: 'compare',
+                            text: `${a} <span class="text-blue-300 mx-2">○</span> ${b}`,
+                            answer: ans,
+                            options: ['<', '=', '>'],
+                            visual: { countA: a, countB: b, icon: item } 
+                        };
+                    }
+                }
+                else if (level === 4) { // ໂຈດບັນຫາ
+                    let type = getRandomInt(0, 1); 
+                    let item = ITEMS_EMOJI[getRandomInt(0, ITEMS_EMOJI.length - 1)];
+                    let itemName = getItemName(item);
+                    let a, b, ans;
+                    
+                    if (diff === 'p1') { a = getRandomInt(2, 10); b = getRandomInt(1, 9); }
+                    else if (diff === 'p2') { a = getRandomInt(10, 50); b = getRandomInt(10, 40); }
+                    else if (diff === 'p3') { a = getRandomInt(50, 200); b = getRandomInt(20, 100); }
+                    else if (diff === 'p4') { a = getRandomInt(200, 1000); b = getRandomInt(100, 500); }
+                    else { a = getRandomInt(20, 99)/10; b = getRandomInt(10, 50)/10; isDec = true; }
+
+                    if (type === 0) { // ບວກ
+                        ans = isDec ? parseFloat((a + b).toFixed(1)) : a + b;
+                        sig = `w+${a}+${b}`;
+                        if (!usedSignatures.has(sig)) {
+                            q = {
+                                type: 'word',
+                                text: `ມີ${itemName} ${a} ${isDec?'ກິໂລ':'ອັນ'}, ຊື້ເພີ່ມອີກ ${b} ${isDec?'ກິໂລ':'ອັນ'}. ລວມມີທັງໝົດເທົ່າໃດ?`,
+                                answer: ans,
+                                options: generateOptions(ans, isDec),
+                                visualIcon: item
+                            };
+                        }
+                    } else { // ລົບ
+                        if (b > a) { let temp = a; a = b; b = temp; }
+                        ans = isDec ? parseFloat((a - b).toFixed(1)) : a - b;
+                        sig = `w-${a}-${b}`;
+                        if (!usedSignatures.has(sig)) {
+                            q = {
+                                type: 'word',
+                                text: `ມີ${itemName} ${a} ${isDec?'ກິໂລ':'ອັນ'}, ແບ່ງໃຫ້ໝູ່ ${b} ${isDec?'ກິໂລ':'ອັນ'}. ເຫຼືອເທົ່າໃດ?`,
+                                answer: ans,
+                                options: generateOptions(ans, isDec),
+                                visualIcon: item
+                            };
+                        }
+                    }
+                }
+                else if (level === 5) { // ຄູນ
+                    let a, b, ans;
+                    if (diff === 'p1') { a = getRandomInt(1, 5); b = getRandomInt(1, 5); }
+                    else if (diff === 'p2') { a = getRandomInt(2, 9); b = getRandomInt(2, 9); }
+                    else if (diff === 'p3') { a = getRandomInt(10, 50); b = getRandomInt(2, 9); } // 2 ຫຼັກ ຄູນ 1 ຫຼັກ
+                    else if (diff === 'p4') { a = getRandomInt(10, 99); b = getRandomInt(10, 20); } // 2 ຫຼັກ ຄູນ 2 ຫຼັກ
+                    else { a = getRandomInt(11, 50)/10; b = getRandomInt(2, 9); isDec = true; } // ທົດສະນິຍົມ ຄູນ ຈຳນວນຖ້ວນ
+                    
+                    ans = isDec ? parseFloat((a * b).toFixed(1)) : a * b;
+                    sig = `${a}*${b}`;
+                    if (!usedSignatures.has(sig)) {
+                        q = { type: 'equation', text: `${a} × ${b} = ?`, answer: ans, options: generateOptions(ans, isDec) };
+                    }
+                }
+                else if (level === 6) { // ຫານ
+                    let c, b, a, ans; // a ÷ b = c (ans = c)
+                    if (diff === 'p1') { c = getRandomInt(1, 5); b = getRandomInt(1, 5); }
+                    else if (diff === 'p2') { c = getRandomInt(2, 9); b = getRandomInt(2, 9); }
+                    else if (diff === 'p3') { c = getRandomInt(10, 50); b = getRandomInt(2, 9); }
+                    else if (diff === 'p4') { c = getRandomInt(10, 99); b = getRandomInt(2, 19); }
+                    else { c = getRandomInt(11, 50)/10; b = getRandomInt(2, 9); isDec = true; } 
+                    
+                    a = isDec ? parseFloat((b * c).toFixed(1)) : b * c;
+                    ans = c;
+                    sig = `${a}/${b}`;
+                    if (!usedSignatures.has(sig)) {
+                        q = { type: 'equation', text: `${a} ÷ ${b} = ?`, answer: ans, options: generateOptions(ans, isDec) };
+                    }
+                }
+                
+                if (q) {
+                    qList.push(q);
+                    usedSignatures.add(sig);
+                }
+            }
+            
+            return qList;
+        }
+
+        // ສ້າງຕົວເລືອກຄຳຕອບຫຼອກ
+        function generateOptions(correctAnswer, isDecimal = false) {
+            let options = new Set([correctAnswer]);
+            
+            while (options.size < 4) {
+                let fakeAns;
+                if (isDecimal) {
+                    // ສຳລັບເລກທົດສະນິຍົມ
+                    let variation = (getRandomInt(-30, 30) / 10);
+                    if(variation === 0) variation = 1.0;
+                    fakeAns = parseFloat((correctAnswer + variation).toFixed(1));
+                } else {
+                    // ສຳລັບເລກຖ້ວນ (ປັບຄວາມຫຼາກຫຼາຍຕາມຂະໜາດຕົວເລກ)
+                    let variation;
+                    if (correctAnswer > 1000) { variation = getRandomInt(-5, 5) * 100; }
+                    else if (correctAnswer > 100) { variation = getRandomInt(-5, 5) * 10; }
+                    else { variation = getRandomInt(-5, 5); }
+                    
+                    if (variation === 0) variation = 2; // ປ້ອງກັນການຊ້ຳກັນ
+                    fakeAns = correctAnswer + variation;
+                }
+                
+                if (fakeAns >= 0 && !options.has(fakeAns)) {
+                    options.add(fakeAns);
+                }
+            }
+            
+            // ປ່ຽນ Set ເປັນ Array ແລ້ວສຸບຕຳແໜ່ງ (Shuffle)
+            return Array.from(options).sort(() => Math.random() - 0.5);
+        }
+
+        function getItemName(emoji) {
+            const map = {
+                '🍎': 'ແອັບເປິ້ນ', '🍌': 'ກ້ວຍ', '🍓': 'ສະຕໍເບີຣີ', 
+                '🐶': 'ໝານ້ອຍ', '🐱': 'ແມວນ້ອຍ', '⚽': 'ບານ', 
+                '🚗': 'ລົດ', '⭐': 'ດາວ', '🎈': 'ໝາກປຸມເປົ້າ', '🖍️': 'ສໍສີ'
+            };
+            return map[emoji] || 'ອັນ';
+        }
+
+
+        // --- ລະບົບການຫຼິ້ນເກມ (Gameplay) ---
+        function startGame(level) {
+            playSound('click');
+            currentLevel = level;
+            currentQuestion = 0;
+            score = 0;
+            isAnswering = false;
+            
+            questions = generateQuestions(level);
+            
+            document.getElementById('game-score').textContent = score;
+            showScreen('screen-game');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            isAnswering = false;
+            const q = questions[currentQuestion];
+            
+            // ອັບເດດ UI ເທິງ
+            document.getElementById('current-question-num').textContent = currentQuestion + 1;
+            const progressPct = ((currentQuestion) / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPct}%`;
+            
+            // ຕັ້ງຄ່າຄຳຖາມ
+            const qText = document.getElementById('question-text');
+            const visualAid = document.getElementById('visual-aid');
+            
+            if (q.type === 'word') {
+                qText.innerHTML = `<div class="text-3xl leading-relaxed">${q.text} <div class="text-5xl mt-2">${q.visualIcon}</div></div>`;
+                visualAid.classList.add('hidden');
+            } else if (q.type === 'compare') {
+                qText.innerHTML = q.text;
+                // ແຕ້ມຮູບປະກອບຖ້າຕົວເລກນ້ອຍກວ່າ 15
+                if (q.visual.countA <= 15 && q.visual.countB <= 15) {
+                    visualAid.innerHTML = `
+                        <div class="flex flex-col items-center w-1/2">
+                            <div class="flex flex-wrap justify-center">${q.visual.icon.repeat(q.visual.countA).split('').map(e=>`<span class="item-icon">${q.visual.icon}</span>`).join('')}</div>
+                        </div>
+                        <div class="flex flex-col items-center w-1/2">
+                            <div class="flex flex-wrap justify-center">${q.visual.icon.repeat(q.visual.countB).split('').map(e=>`<span class="item-icon">${q.visual.icon}</span>`).join('')}</div>
+                        </div>
+                    `;
+                    visualAid.classList.remove('hidden');
+                    visualAid.classList.add('flex');
+                } else {
+                    visualAid.classList.add('hidden');
+                }
+            } else {
+                qText.innerHTML = q.text;
+                visualAid.classList.add('hidden');
+            }
+
+            // ສ້າງປຸ່ມຄຳຕອບ
+            const container = document.getElementById('answers-container');
+            container.innerHTML = '';
+            
+            // ໃຊ້ grid ທີ່ເໝາະສົມ (3 ປຸ່ມສຳລັບປຽບທຽບ, 4 ປຸ່ມສຳລັບທົ່ວໄປ)
+            container.className = q.options.length === 3 ? 'grid grid-cols-3 gap-3 w-full' : 'grid grid-cols-2 gap-4 w-full';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-cartoon bg-white text-blue-600 font-black text-3xl sm:text-4xl py-6 rounded-3xl border-4 border-blue-200 hover:bg-blue-50 hover:border-blue-300 shadow-md transition-colors";
+                btn.innerHTML = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+
+            // ເຊື່ອງ Feedback ເກົ່າ
+            const fb = document.getElementById('feedback-msg');
+            fb.style.opacity = '0';
+        }
+
+        function checkAnswer(selectedAns, btnElement) {
+            if (isAnswering) return;
+            isAnswering = true;
+            
+            const q = questions[currentQuestion];
+            const isCorrect = String(selectedAns) === String(q.answer);
+            const fb = document.getElementById('feedback-msg');
+            const qText = document.getElementById('question-text');
+
+            if (isCorrect) {
+                // ຕອບຖືກ
+                playSound('correct');
+                score++;
+                document.getElementById('game-score').textContent = score;
+                
+                // ສະແດງ UI ຖືກຕ້ອງ
+                btnElement.classList.remove('bg-white', 'border-blue-200', 'text-blue-600');
+                btnElement.classList.add('bg-green-400', 'border-green-600', 'text-white', 'animate-pop');
+                
+                // ປ່ຽນເຄື່ອງໝາຍ ○ ເປັນຄຳຕອບໃນ Level 3
+                if(q.type === 'compare') {
+                    qText.innerHTML = qText.innerHTML.replace('○', `<span class="text-green-500 font-black animate-pop">${q.answer}</span>`);
+                } else if (q.type === 'equation') {
+                    qText.innerHTML = qText.innerHTML.replace('?', `<span class="text-green-500 font-black animate-pop">${q.answer}</span>`);
+                }
+                
+                fb.innerHTML = '⭐ ເກັ່ງຫຼາຍ! 🎉';
+                fb.className = "absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-700 border-green-400 border-2 px-6 py-2 rounded-full font-bold text-xl shadow-lg transition-opacity duration-300 whitespace-nowrap z-10 animate-bounce-slow";
+                fb.style.opacity = '1';
+                
+                // Confetti ເບົາໆ
+                createConfetti(15);
+                
+                setTimeout(nextQuestion, 1500);
+            } else {
+                // ຕອບຜິດ
+                playSound('wrong');
+                
+                btnElement.classList.remove('bg-white', 'border-blue-200');
+                btnElement.classList.add('bg-red-300', 'border-red-500', 'text-white', 'animate-shake');
+                
+                // ຄຳແນະນຳທາງບວກ
+                const encouragements = ['ລອງອີກຄັ້ງ! 😊', 'ເກືອບຖືກແລ້ວ! ✌️', 'ຄິດດີໆເດີ້! 🧠'];
+                fb.innerHTML = encouragements[getRandomInt(0, 2)];
+                fb.className = "absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-rose-100 text-rose-700 border-rose-400 border-2 px-6 py-2 rounded-full font-bold text-lg shadow-lg transition-opacity duration-300 whitespace-nowrap z-10";
+                fb.style.opacity = '1';
+                
+                // ປົດລັອກໃຫ້ກົດໃໝ່ໄດ້ຫຼັງຈາກ 1 ວິນາທີ
+                setTimeout(() => {
+                    isAnswering = false;
+                    fb.style.opacity = '0';
+                    btnElement.classList.remove('bg-red-300', 'border-red-500', 'text-white', 'animate-shake');
+                    btnElement.classList.add('bg-white', 'border-blue-200');
+                }, 1200);
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < totalQuestions) {
+                renderQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+
+        function confirmExit() {
+            // ສາມາດໃຊ້ Custom Modal ແທນ confirm ໄດ້, ແຕ່ເພື່ອຄວາມໄວໃຊ້ວິທີປ່ຽນໜ້າເລີຍໃນເກມເດັກນ້ອຍ
+            // ເພາະເດັກອາດຈະກົດຫຼິ້ນໆ
+            showScreen('screen-levels');
+        }
+
+        function endGame() {
+            playSound('win');
+            
+            // ອັບເດດແຖບ Progress ໃຫ້ເຕັມ
+            document.getElementById('progress-bar').style.width = `100%`;
+            
+            setTimeout(() => {
+                showScreen('screen-summary');
+                createConfetti(100);
+                
+                // ຊື່ດ່ານ
+                const levelNames = ['', 'ການບວກແສນມ່ວນ', 'ການລົບທ້າທາຍ', 'ນັກປຽບທຽບຈຳນວນ', 'ໂຈດປັນຫາຜະຈົນໄພ', 'ການຄູນພື້ນຖານ', 'ການຫານທ້າທາຍ'];
+                document.getElementById('summary-level-name').textContent = `LEVEL ${currentLevel}: ${levelNames[currentLevel]}`;
+                
+                // ຄະແນນ
+                document.getElementById('summary-correct').textContent = score;
+                document.getElementById('summary-stars').textContent = score;
+                
+                // ໄອຄອນ
+                const icon = document.getElementById('summary-icon');
+                if (score === 10) icon.textContent = '👑';
+                else if (score >= 7) icon.textContent = '🌟';
+                else if (score >= 4) icon.textContent = '👍';
+                else icon.textContent = '💪';
+                
+                // ບັນທຶກຂໍ້ມູນ
+                playerData.totalStars += score;
+                
+                // ກວດສອບ Badge ໃໝ່
+                checkNewBadges();
+                
+                saveData();
+                
+            }, 500);
+        }
+
+        function checkNewBadges() {
+            const newBadgeMsg = document.getElementById('new-badge-msg');
+            newBadgeMsg.classList.add('hidden');
+            
+            let unlockedNew = false;
+            
+            BADGES.forEach(badge => {
+                if (playerData.totalStars >= badge.reqStars && !playerData.badges.includes(badge.id)) {
+                    playerData.badges.push(badge.id);
+                    unlockedNew = true;
+                }
+            });
+            
+            if (unlockedNew) {
+                newBadgeMsg.classList.remove('hidden');
+                playSound('win'); // ຫຼິ້ນສຽງຊ້ຳເພື່ອຄວາມຍິ່ງໃຫຍ່
+            }
+        }
+
+        function playAgain() {
+            startGame(currentLevel);
+        }
+
+        // --- ລະບົບ Confetti (Particle System ງ່າຍໆ) ---
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createConfetti(amount) {
+            const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d', '#42e2b8'];
+            for (let i = 0; i < amount; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 50,
+                    r: Math.random() * 6 + 4,
+                    dx: Math.random() * 10 - 5,
+                    dy: Math.random() * -10 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05,
+                    tiltAngle: 0
+                });
+            }
+            if(particles.length === amount) { // ຖ້າບໍ່ມີອານິເມຊັນແລ່ນຢູ່
+                requestAnimationFrame(renderConfetti);
+            }
+        }
+
+        function renderConfetti() {
+            if (particles.length === 0) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.tiltAngle += p.tiltAngleInc;
+                p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+                p.x += Math.sin(p.tiltAngle) * 2;
+                p.dy += 0.2; // ຄວາມໂນ້ມຖ່ວງ
+                p.y += p.dy;
+                p.x += p.dx;
+
+                ctx.beginPath();
+                ctx.lineWidth = p.r;
+                ctx.strokeStyle = p.color;
+                ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                ctx.stroke();
+            }
+            
+            // ລົບອະນຸພາກທີ່ຕົກອອກຈາກຈໍ
+            particles = particles.filter(p => p.y < canvas.height + 100);
+            
+            if (particles.length > 0) {
+                requestAnimationFrame(renderConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // --- ເລີ່ມຕົ້ນແອັບເມື່ອໂຫຼດສຳເລັດ ---
+        window.onload = () => {
+            loadData();
+            // ສຳລັບ iOS PWA / Web Audio policy, ສຽງຈະຖືກອະນຸຍາດເມື່ອມີການແຕະຄັ້ງທຳອິດ
+            document.body.addEventListener('touchstart', function() {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }, {once:true});
+            document.body.addEventListener('click', function() {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }, {once:true});
+        };
+
+    </script>
+</body>
+</html>

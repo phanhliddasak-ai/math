@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lao Adventure - ຜະຈົນໄພພາສາລາວ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+             font-family: 'Noto Sans Lao', sans-serif;
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation; /* ປ້ອງກັນການຊູມເວລາແຕະໄວໆ */
+            user-select: none;
+        }
+
+        /* ປຸ່ມແບບ Cartoon 3D */
+        .btn-cartoon {
+            transition: all 0.1s ease;
+            box-shadow: 0 6px 0px rgba(0,0,0,0.2);
+            position: relative;
+            top: 0;
+        }
+        .btn-cartoon:active {
+            top: 6px;
+            box-shadow: 0 0px 0px rgba(0,0,0,0.2);
+        }
+        .btn-cartoon.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* ອານິເມຊັນ */
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce-slow {
+            animation: bounce-slow 2.5s infinite ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s infinite;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: flex; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <!-- ໜ້າຫຼັກ -->
+    <div id="screen-home" class="screen active flex-col items-center w-full max-w-md animate-pop text-center">
+        <h1 class="text-4xl md:text-5xl font-black text-slate-800 drop-shadow-sm mb-2 mt-8 leading-tight">
+            Lao Adventure<br>
+            <span class="text-2xl text-emerald-500">ຜະຈົນໄພພາສາລາວ</span>
+        </h1>
+        
+        <div class="text-6xl my-6 animate-bounce-slow">
+            🐘🇱🇦📚
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm border-4 border-slate-100 relative mt-4">
+            <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-yellow-100 rounded-full py-1 px-4 border-2 border-yellow-400 shadow-sm flex gap-3 w-max">
+                <div class="font-bold text-yellow-700">⭐ <span id="home-total-stars">0</span> ດາວ</div>
+                <div class="text-sm font-bold text-emerald-600 border-l-2 border-yellow-300 pl-3" id="home-highest-badge">🥉 ຜູ້ເລີ່ມຕົ້ນ</div>
+            </div>
+
+            <div class="space-y-4 w-full mt-2">
+                <button onclick="showScreen('screen-levels')" class="btn-cartoon w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-6 rounded-2xl text-2xl border-2 border-emerald-600">
+                    <i class="fa-solid fa-play mr-2"></i> ເລີ່ມຮຽນເລີຍ
+                </button>
+                <button onclick="showScreen('screen-stats')" class="btn-cartoon w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-3 px-6 rounded-2xl text-xl border-2 border-sky-600">
+                    <i class="fa-solid fa-trophy mr-2"></i> ຄະແນນຂອງຂ້ອຍ
+                </button>
+            </div>
+        </div>
+        
+        <!-- Settings (ຄວາມຍາກ) -->
+        <div class="mt-6 flex flex-col items-center bg-white border-2 border-slate-200 px-6 py-3 rounded-2xl shadow-sm w-full max-w-sm">
+            <span class="font-bold text-gray-700 mb-2">ເລືອກລະດັບຊັ້ນຮຽນ:</span>
+            <select id="difficulty-select" onchange="saveDifficulty()" class="w-full bg-slate-100 p-2 rounded-xl font-bold text-indigo-600 outline-none cursor-pointer border-2 border-slate-200 text-center text-lg">
+                <option value="p1">ປ.1 (ພະຍັນຊະນະ, ສະຫຼະ, ຄຳງ່າຍໆ)</option>
+                <option value="p2">ປ.2 (ວັນນະຍຸດ, ຕົວສະກົດ)</option>
+                <option value="p3">ປ.3 (ອ່ານປະໂຫຍກ, ຄຳສັບ)</option>
+                <option value="p4">ປ.4 (ອ່ານຈັບໃຈຄວາມ, ຄຳກົງກັນຂ້າມ)</option>
+                <option value="p5">ປ.5 (ສຸພາສິດ, ໄວຍາກອນ)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ໜ້າເລືອກລະດັບ (ໝວດໝູ່ເກມ) -->
+    <div id="screen-levels" class="screen flex-col items-center w-full max-w-md hidden text-center">
+        <button onclick="showScreen('screen-home')" class="self-start text-slate-600 hover:text-slate-800 text-lg font-bold mb-4 bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-full transition-colors btn-cartoon">
+            <i class="fa-solid fa-arrow-left"></i> ກັບຄືນ
+        </button>
+        
+        <h2 class="text-3xl font-black text-slate-800 mb-6">ເລືອກໝວດຮຽນຮູ້</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full px-2">
+            <!-- ໝວດ 1: ຄຳສັບ -->
+            <button onclick="startGame('match')" class="btn-cartoon bg-rose-400 hover:bg-rose-300 text-white rounded-3xl p-4 flex items-center border-4 border-rose-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    🖼️
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl">ຈັບຄູ່ຮູບພາບ</div>
+                    <div class="font-semibold text-rose-100 text-sm">ເລືອກຄຳສັບໃຫ້ກົງກັບຮູບ</div>
+                </div>
+            </button>
+
+            <!-- ໝວດ 2: ປະກອບຄຳ -->
+            <button onclick="startGame('spell')" class="btn-cartoon bg-sky-400 hover:bg-sky-300 text-white rounded-3xl p-4 flex items-center border-4 border-sky-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    📝
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl">ປະກອບຄຳສັບ</div>
+                    <div class="font-semibold text-sky-100 text-sm">ຊອກຫາຕົວໜັງສືທີ່ຫາຍໄປ</div>
+                </div>
+            </button>
+
+            <!-- ໝວດ 3: ຕື່ມຄຳ -->
+            <button onclick="startGame('fill')" class="btn-cartoon bg-amber-400 hover:bg-amber-300 text-white rounded-3xl p-4 flex items-center border-4 border-amber-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    🧩
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl">ຕື່ມຄຳໃນຊ່ອງຫວ່າງ</div>
+                    <div class="font-semibold text-amber-100 text-sm">ເຮັດໃຫ້ປະໂຫຍກສົມບູນ</div>
+                </div>
+            </button>
+
+            <!-- ໝວດ 4: ທ້າທາຍ -->
+            <button onclick="startGame('challenge')" class="btn-cartoon bg-purple-400 hover:bg-purple-300 text-white rounded-3xl p-4 flex items-center border-4 border-purple-500">
+                <div class="w-14 h-14 bg-white/30 rounded-2xl flex items-center justify-center text-3xl mr-3 shadow-inner shrink-0">
+                    💡
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-xl">ໝວດທ້າທາຍ</div>
+                    <div class="font-semibold text-purple-100 text-sm">ຄຳກົງກັນຂ້າມ, ສຸພາສິດ</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ໜ້າຫຼິ້ນເກມ -->
+    <div id="screen-game" class="screen flex-col items-center w-full max-w-md hidden">
+        <!-- Top Bar -->
+        <div class="w-full flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border-2 border-slate-100">
+            <button onclick="confirmExit()" class="text-gray-500 hover:text-gray-700 font-bold bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center active:scale-95 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="flex-1 px-4">
+                <div class="h-4 w-full bg-slate-100 rounded-full overflow-hidden border-2 border-slate-200 shadow-inner">
+                    <div id="progress-bar" class="h-full bg-emerald-500 w-0 relative transition-all duration-300">
+                        <div class="absolute inset-0 bg-white/20 w-full h-1"></div>
+                    </div>
+                </div>
+                <div class="text-center text-xs font-bold text-slate-500 mt-1">ຂໍ້ <span id="current-question-num">1</span>/10</div>
+            </div>
+
+            <div class="bg-yellow-100 px-3 py-1 rounded-full font-bold text-yellow-600 border-2 border-yellow-300 shadow-sm flex items-center">
+                <i class="fa-solid fa-star text-yellow-500 mr-1"></i> <span id="game-score">0</span>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="bg-white w-full rounded-3xl p-6 shadow-xl text-center min-h-[240px] flex flex-col justify-center items-center relative mb-6 border-4 border-slate-100">
+            
+            <!-- ພື້ນທີ່ສຳລັບຮູບພາບປະກອບ (ໝວດຈັບຄູ່) -->
+            <div id="visual-aid" class="text-8xl mb-4 hidden animate-bounce-slow"></div>
+            
+            <!-- ປຸ່ມຟັງສຽງຄຳຖາມ -->
+            <button id="listen-q-btn" onclick="playQuestionAudio()" class="hidden absolute top-4 right-4 w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xl shadow-sm border-2 border-emerald-300 hover:bg-emerald-200">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            
+            <div id="question-text" class="text-3xl sm:text-4xl font-black text-slate-700 tracking-wide leading-tight">
+                <!-- ຄຳຖາມຈະສະແດງຢູ່ໜີ້ -->
+            </div>
+            
+            <div id="question-subtext" class="text-lg font-bold text-slate-400 mt-3 hidden">
+                <!-- ຂໍ້ຄວາມຊ່ວຍເຫຼືອ -->
+            </div>
+
+            <!-- Message box ສຳລັບຄຳຕິຊົມ -->
+            <div id="feedback-msg" class="absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-white px-6 py-2 rounded-full font-bold text-lg shadow-lg opacity-0 transition-opacity duration-300 border-2 whitespace-nowrap pointer-events-none">
+            </div>
+        </div>
+
+        <!-- Answer Area (Options) -->
+        <div id="answers-container" class="grid grid-cols-2 gap-4 w-full">
+            <!-- ປຸ່ມຄຳຕອບຈະຖືກສ້າງດ້ວຍ JS -->
+        </div>
+    </div>
+
+    <!-- ໜ້າສະຫຼຸບຜົນ (Game Over) -->
+    <div id="screen-summary" class="screen flex-col items-center w-full max-w-md hidden text-center animate-pop">
+        <h2 class="text-4xl font-black text-slate-800 mb-2">ເກັ່ງຫຼາຍ!</h2>
+        <p class="text-emerald-700 text-lg mb-6 font-bold bg-emerald-100 px-4 py-1 rounded-full border-2 border-emerald-200" id="summary-mode-name">ຈັບຄູ່ຮູບພາບ</p>
+
+        <div class="bg-white rounded-3xl p-8 shadow-2xl w-full relative border-4 border-yellow-300">
+            <div id="summary-icon" class="text-7xl absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-100 rounded-full w-24 h-24 flex items-center justify-center border-4 border-white shadow-lg animate-bounce-slow">
+                🏆
+            </div>
+
+            <div class="mt-8 mb-6">
+                <p class="text-gray-500 font-bold mb-1">ຕອບຖືກ</p>
+                <div class="text-5xl font-black text-green-500"><span id="summary-correct">8</span><span class="text-3xl text-gray-400">/10</span></div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-2xl p-4 mb-6 border-2 border-yellow-200">
+                <p class="text-yellow-700 font-bold mb-2">ດາວທີ່ໄດ້ຮັບຮອບນີ້</p>
+                <div class="text-4xl font-black text-yellow-500">
+                    +<span id="summary-stars">8</span> ⭐
+                </div>
+            </div>
+
+            <div id="new-badge-msg" class="hidden bg-sky-100 text-sky-700 p-2 rounded-xl mb-6 font-bold animate-pulse border-2 border-sky-300">
+                🎉 ປົດລັອກຫຼຽນໃໝ່ແລ້ວ! 🎉
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="playAgain()" class="btn-cartoon w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-6 rounded-2xl text-xl border-2 border-emerald-600">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> ຫຼິ້ນອີກຄັ້ງ
+                </button>
+                <button onclick="showScreen('screen-levels')" class="btn-cartoon w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-3 px-6 rounded-2xl text-lg border-2 border-sky-600">
+                    <i class="fa-solid fa-list mr-2"></i> ເລືອກໝວດອື່ນ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ໜ້າສະຖິຕິ (Stats / Badges) -->
+    <div id="screen-stats" class="screen flex-col items-center w-full max-w-md hidden text-center">
+        <button onclick="showScreen('screen-home')" class="self-start text-slate-600 hover:text-slate-800 text-lg font-bold mb-4 bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-full transition-colors btn-cartoon">
+            <i class="fa-solid fa-arrow-left"></i> ກັບຄືນ
+        </button>
+
+        <h2 class="text-3xl font-black text-slate-800 mb-6">ຄະແນນສະສົມຂອງຂ້ອຍ</h2>
+
+        <div class="bg-white rounded-3xl p-6 shadow-xl w-full border-4 border-slate-100 mb-6">
+            <div class="text-6xl text-yellow-400 mb-2">⭐</div>
+            <div class="text-sm font-bold text-gray-500 uppercase">ດາວທັງໝົດ</div>
+            <div class="text-5xl font-black text-slate-800" id="stats-total-stars">0</div>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-700 mb-4 w-full text-left px-2">ຫຼຽນລາງວັນ (Badges)</h3>
+        
+        <div class="grid grid-cols-3 gap-3 w-full px-2" id="badges-container">
+            <!-- Badges ຈະຖືກ Render ຜ່ານ JS -->
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        // --- ຕົວປ່ຽນສະຖານະຂອງເກມ ---
+        let currentMode = 'match';
+        let currentQuestion = 0;
+        let score = 0;
+        let totalQuestions = 10;
+        let currentQuestionList = [];
+        let isAnswering = false;
+        
+        let playerData = {
+            totalStars: 0,
+            difficulty: 'p1', 
+            badges: [] 
+        };
+
+        const BADGES = [
+            { id: 'starter', name: 'ຜູ້ເລີ່ມຕົ້ນ', icon: '🥉', reqStars: 0, desc: 'ຍິນດີຕ້ອນຮັບ!' },
+            { id: 'reader', name: 'ນັກອ່ານນ້ອຍ', icon: '🥈', reqStars: 50, desc: 'ໄດ້ດາວ 50 ດວງ' },
+            { id: 'writer', name: 'ນັກຂຽນເກັ່ງ', icon: '🥇', reqStars: 150, desc: 'ໄດ້ດາວ 150 ດວງ' },
+            { id: 'scholar', name: 'ປາດນ້ອຍ', icon: '🎓', reqStars: 300, desc: 'ໄດ້ດາວ 300 ດວງ' },
+            { id: 'master', name: 'ອັດສະລິຍະ', icon: '👑', reqStars: 500, desc: 'ໄດ້ດາວ 500 ດວງ' }
+        ];
+
+        // --- ລະບົບສຽງ (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'win') {
+                const freqs = [400, 500, 600, 800];
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'sine';
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = f;
+                    g.gain.setValueAtTime(0.2, audioCtx.currentTime + (i*0.1));
+                    g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i*0.1) + 0.3);
+                    o.start(audioCtx.currentTime + (i*0.1));
+                    o.stop(audioCtx.currentTime + (i*0.1) + 0.3);
+                });
+            }
+        }
+
+        // --- Text-to-Speech (ອ່ານອອກສຽງພາສາລາວ) ---
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // ຢຸດສຽງເກົ່າ
+                const msg = new SpeechSynthesisUtterance();
+                msg.text = text;
+                msg.lang = 'lo-LA'; // ພາສາລາວ
+                msg.rate = 0.9;
+                
+                // ລອງຫຼິ້ນ, ຖ້າອຸປະກອນບໍ່ຮອງຮັບ lo-LA ມັນອາດຈະງຽບໄປ ແຕ່ເກມຍັງຫຼິ້ນໄດ້ປົກກະຕິ
+                try {
+                    window.speechSynthesis.speak(msg);
+                } catch (e) { console.log("TTS not supported", e); }
+            }
+        }
+        
+        function playQuestionAudio() {
+            if(currentQuestionList[currentQuestion]) {
+                playSound('click');
+                let textToRead = currentQuestionList[currentQuestion].qTextForAudio || currentQuestionList[currentQuestion].q;
+                speakText(textToRead); 
+            }
+        }
+
+        // ຖານຂໍ້ມູນຄຳຖາມພາສາລາວ (ປັບຕາມຊັ້ນຮຽນ ປ.1 - ປ.5)
+        const QUESTION_BANK = {
+            match: {
+                p1: [
+                    {q: '🐟', a: 'ປາ', opts: ['ປາ', 'ກາ', 'ມາ', 'ນາ']},
+                    {q: '🦀', a: 'ປູ', opts: ['ປູ', 'ງູ', 'ໜູ', 'ຫູ']},
+                    {q: '🐍', a: 'ງູ', opts: ['ປູ', 'ງູ', 'ໝູ', 'ໜູ']},
+                    {q: '👁️', a: 'ຕາ', opts: ['ຂາ', 'ຕາ', 'ມາ', 'ລາ']},
+                    {q: '🐕', a: 'ໝາ', opts: ['ໝາ', 'ມາ', 'ໜາ', 'ປາ']},
+                    {q: '🐈', a: 'ແມວ', opts: ['ແມວ', 'ແຖວ', 'ແກ້ວ', 'ແລ້ວ']},
+                    {q: '🐘', a: 'ຊ້າງ', opts: ['ຮ່າງ', 'ຊ້າງ', 'ຈ້າງ', 'ລ້າງ']},
+                    {q: '🐒', a: 'ລີງ', opts: ['ລີງ', 'ຍິງ', 'ສິງ', 'ຕິງ']},
+                    {q: '🐓', a: 'ໄກ່', opts: ['ໄຂ່', 'ໄກ່', 'ໃໝ່', 'ໃຫຍ່']},
+                    {q: '🐄', a: 'ງົວ', opts: ['ຕົວ', 'ບົວ', 'ງົວ', 'ຫົວ']}
+                ],
+                p2: [
+                    {q: '🏫', a: 'ໂຮງຮຽນ', opts: ['ໂຮງໝໍ', 'ໂຮງຮຽນ', 'ໂຮງແຮມ', 'ໂຮງງານ']},
+                    {q: '🌺', a: 'ດອກໄມ້', opts: ['ຕົ້ນໄມ້', 'ໃບໄມ້', 'ດອກໄມ້', 'ໝາກໄມ້']},
+                    {q: '🚲', a: 'ລົດຖີບ', opts: ['ລົດຈັກ', 'ລົດຖີບ', 'ລົດໃຫຍ່', 'ລົດເມ']},
+                    {q: '🍌', a: 'ໝາກກ້ວຍ', opts: ['ໝາກມ່ວງ', 'ໝາກກ້ວຍ', 'ໝາກຫຸ່ງ', 'ໝາກນັດ']},
+                    {q: '📖', a: 'ປຶ້ມອ່ານ', opts: ['ປຶ້ມຂຽນ', 'ສໍດຳ', 'ປຶ້ມອ່ານ', 'ບັນທັດ']},
+                    {q: '🌧️', a: 'ຝົນຕົກ', opts: ['ແດດອອກ', 'ລົມພັດ', 'ຝົນຕົກ', 'ຟ້າຮ້ອງ']},
+                    {q: '👕', a: 'ເສື້ອ', opts: ['ໂສ້ງ', 'ເສື້ອ', 'ກະໂປ່ງ', 'ໝວກ']},
+                    {q: '🪑', a: 'ຕັ່ງ', opts: ['ໂຕະ', 'ຕັ່ງ', 'ຕຽງ', 'ຕູ້']},
+                    {q: '🍽️', a: 'ຈານ', opts: ['ຖ້ວຍ', 'ຈານ', 'ບ່ວງ', 'ຈອກ']},
+                    {q: '🍉', a: 'ໝາກໂມ', opts: ['ໝາກໂມ', 'ໝາກກ້ຽງ', 'ໝາກຂາມ', 'ໝາກເງາະ']}
+                ],
+                p3: [
+                    {q: '👨‍⚕️', a: 'ທ່ານໝໍ', opts: ['ທະຫານ', 'ຕຳຫຼວດ', 'ທ່ານໝໍ', 'ຊາວນາ']},
+                    {q: '🧑‍🏫', a: 'ຄູອາຈານ', opts: ['ນັກຮຽນ', 'ຄູອາຈານ', 'ພໍ່ຄ້າ', 'ຊ່າງແປງ']},
+                    {q: '✈️', a: 'ຍົນ', opts: ['ເຮືອ', 'ຍົນ', 'ລົດໄຟ', 'ລົດເມ']},
+                    {q: '🏞️', a: 'ແມ່ນ້ຳ', opts: ['ພູເຂົາ', 'ແມ່ນ້ຳ', 'ປ່າໄມ້', 'ທະເລ']},
+                    {q: '🛒', a: 'ຕະຫຼາດ', opts: ['ຕະຫຼາດ', 'ວັດ', 'ໂຮງໝໍ', 'ທະນາຄານ']},
+                    {q: '🏥', a: 'ໂຮງໝໍ', opts: ['ໂຮງຮຽນ', 'ໂຮງໝໍ', 'ໂຮງແຮມ', 'ໂຮງຈັກ']},
+                    {q: '👮', a: 'ຕຳຫຼວດ', opts: ['ທະຫານ', 'ຕຳຫຼວດ', 'ຊາວນາ', 'ນັກບິນ']},
+                    {q: '🌤️', a: 'ທ້ອງຟ້າ', opts: ['ກ້ອນເມກ', 'ທ້ອງຟ້າ', 'ດວງຕາເວັນ', 'ດວງຈັນ']},
+                    {q: '💰', a: 'ເງິນ', opts: ['ຄຳ', 'ເງິນ', 'ທອງ', 'ເພັດ']},
+                    {q: '🛌', a: 'ຫ້ອງນອນ', opts: ['ຫ້ອງນ້ຳ', 'ຫ້ອງນອນ', 'ຫ້ອງຄົວ', 'ຫ້ອງຮັບແຂກ']}
+                ],
+                p4: [
+                    {q: '🌍', a: 'ໜ່ວຍໂລກ', opts: ['ດວງຈັນ', 'ດວງອາທິດ', 'ໜ່ວຍໂລກ', 'ດາວອັງຄານ']},
+                    {q: '🔬', a: 'ກ້ອງຈຸລະທັດ', opts: ['ແວ່ນຂະຫຍາຍ', 'ກ້ອງສ່ອງທາງໄກ', 'ກ້ອງຈຸລະທັດ', 'ແວ່ນຕາ']},
+                    {q: '💻', a: 'ຄອມພິວເຕີ', opts: ['ໂທລະທັດ', 'ໂທລະສັບ', 'ຄອມພິວເຕີ', 'ວິທະຍຸ']},
+                    {q: '📰', a: 'ໜັງສືພິມ', opts: ['ວາລະສານ', 'ໜັງສືພິມ', 'ປຶ້ມນິທານ', 'ປຶ້ມຕຳລາ']},
+                    {q: '✈️', a: 'ສະໜາມບິນ', opts: ['ສະຖານີລົດ', 'ສະໜາມບິນ', 'ທ່າເຮືອ', 'ປ້າຍລົດເມ']},
+                    {q: '🏢', a: 'ຕຶກສູງ', opts: ['ເຮືອນຊັ້ນດຽວ', 'ຕຶກສູງ', 'ໂຮງງານ', 'ວັດ']},
+                    {q: '🌡️', a: 'ບາຫຼອດ', opts: ['ເຂັມທິດ', 'ບາຫຼອດ', 'ໂມງ', 'ໄມ້ບັນທັດ']},
+                    {q: '⚖️', a: 'ຊິງຊັ່ງ', opts: ['ຊິງຊັ່ງ', 'ໄມ້ແມັດ', 'ໂມງຈັບເວລາ', 'ຈອກແທກ']},
+                    {q: '🎸', a: 'ກີຕ້າ', opts: ['ແຄນ', 'ກີຕ້າ', 'ກອງ', 'ລະນາດ']},
+                    {q: '🎨', a: 'ຈານສີ', opts: ['ສໍດຳ', 'ສໍສີ', 'ຈານສີ', 'ພູ່ກັນ']}
+                ],
+                p5: [
+                    {q: '🏯', a: 'ພະລາຊະວັງ', opts: ['ວັດ', 'ພະລາຊະວັງ', 'ເຮືອນ', 'ໂຮງແຮມ']},
+                    {q: '🌋', a: 'ພູເຂົາໄຟ', opts: ['ພູເຂົາ', 'ພູເຂົາໄຟ', 'ຖ້ຳ', 'ນ້ຳຕົກຕາດ']},
+                    {q: '🧬', a: 'ດີເອັນເອ', opts: ['ດີເອັນເອ', 'ຈຸລັງ', 'ເລືອດ', 'ກະດູກ']},
+                    {q: '🛰️', a: 'ດາວທຽມ', opts: ['ຍານອະວະກາດ', 'ດາວທຽມ', 'ບັ້ງໄຟ', 'ຍົນ']},
+                    {q: '🧭', a: 'ເຂັມທິດ', opts: ['ໂມງ', 'ເຂັມທິດ', 'ແຜນທີ່', 'ບາຫຼອດ']},
+                    {q: '📜', a: 'ໃບລານ', opts: ['ເຈ້ຍ', 'ປຶ້ມ', 'ໃບລານ', 'ສີລາຈາລຶກ']},
+                    {q: '🪘', a: 'ກອງ', opts: ['ຄ້ອງ', 'ກອງ', 'ແຄນ', 'ຊໍ']},
+                    {q: '🏆', a: 'ຂັນລາງວັນ', opts: ['ຫຼຽນຄຳ', 'ຂັນລາງວັນ', 'ໃບປະກາດ', 'ຂອງຂວັນ']},
+                    {q: '🎭', a: 'ໜ້າກາກ', opts: ['ໜ້າກາກ', 'ໝວກ', 'ແວ່ນຕາ', 'ເຄື່ອງສຳອາງ']},
+                    {q: '🧩', a: 'ເກມຕໍ່ຮູບ', opts: ['ເກມຕໍ່ຮູບ', 'ໝາກຣຸກ', 'ໝາກລີ້', 'ເຕັ້ນເຊືອກ']}
+                ]
+            },
+            spell: {
+                p1: [
+                    {q: 'ປ _', a: 'າ', opts: ['າ', 'ີ', 'ູ', 'ົ'], qTextForAudio: 'ປາ'},
+                    {q: 'ມ _', a: 'ີ', opts: ['າ', 'ີ', 'ູ', 'ົ'], qTextForAudio: 'ມີ'},
+                    {q: 'ງ _', a: 'ູ', opts: ['າ', 'ີ', 'ູ', 'ົ'], qTextForAudio: 'ງູ'},
+                    {q: 'ກ _ ບ', a: 'ົ', opts: ['າ', 'ີ', 'ູ', 'ົ'], qTextForAudio: 'ກົບ'},
+                    {q: '_ ມວ', a: 'ແ', opts: ['ເ', 'ແ', 'ໂ', 'ໃ'], qTextForAudio: 'ແມວ'},
+                    {q: '_ ດກ', a: 'ເ', opts: ['ເ', 'ແ', 'ໂ', 'ໃ'], qTextForAudio: 'ເດັກ'},
+                    {q: 'ບ _', a: 'ໃ', opts: ['ເ', 'ແ', 'ໂ', 'ໃ'], qTextForAudio: 'ໃບ'},
+                    {q: '_ ມ້', a: 'ໄ', opts: ['ເ', 'ແ', 'ໄ', 'ໃ'], qTextForAudio: 'ໄມ້'},
+                    {q: 'ຕ _', a: 'ົວ', opts: ['ົວ', 'ຽວ', 'ືອ', 'າຍ'], qTextForAudio: 'ຕົວ'},
+                    {q: '_ ້າ', a: 'ມ', opts: ['ມ', 'ນ', 'ງ', 'ຍ'], qTextForAudio: 'ມ້າ'}
+                ],
+                p2: [
+                    {q: 'ແມ _', a: 'ວ', opts: ['ວ', 'ງ', 'ນ', 'ມ'], qTextForAudio: 'ແມວ'},
+                    {q: 'ລີ _', a: 'ງ', opts: ['ວ', 'ງ', 'ນ', 'ມ'], qTextForAudio: 'ລີງ'},
+                    {q: 'ຮຽ _', a: 'ນ', opts: ['ວ', 'ງ', 'ນ', 'ມ'], qTextForAudio: 'ຮຽນ'},
+                    {q: 'ງາ _', a: 'ມ', opts: ['ວ', 'ງ', 'ນ', 'ມ'], qTextForAudio: 'ງາມ'},
+                    {q: 'ຂາ _', a: 'ຍ', opts: ['ຍ', 'ດ', 'ບ', 'ກ'], qTextForAudio: 'ຂາຍ'},
+                    {q: 'ປ _ ດ', a: 'ເ', opts: ['ເ', 'ແ', 'ໂ', 'ໃ'], qTextForAudio: 'ເປັດ'},
+                    {q: 'ກົ _', a: 'ບ', opts: ['ຍ', 'ດ', 'ບ', 'ກ'], qTextForAudio: 'ກົບ'},
+                    {q: 'ນົ _', a: 'ກ', opts: ['ຍ', 'ດ', 'ບ', 'ກ'], qTextForAudio: 'ນົກ'},
+                    {q: 'ນ້ _', a: 'ຳ', opts: ['ຳ', 'າ', 'ີ', 'ູ'], qTextForAudio: 'ນ້ຳ'},
+                    {q: 'ເ _ ົ້າ', a: 'ຈ', opts: ['ຈ', 'ຊ', 'ຕ', 'ທ'], qTextForAudio: 'ເຈົ້າ'}
+                ],
+                p3: [
+                    {q: 'ໂຮງຮຽ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ໂຮງຮຽນ'},
+                    {q: 'ດອກໄມ _', a: '້', opts: ['່', '້', '໊', '໋'], qTextForAudio: 'ດອກໄມ້'},
+                    {q: 'ຕຳຫຼວ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ຕຳຫຼວດ'},
+                    {q: 'ປະເທ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ປະເທດ'},
+                    {q: 'ທະຫາ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ທະຫານ'},
+                    {q: 'ສະອາ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ສະອາດ'},
+                    {q: 'ຄວາມຮູ _', a: '້', opts: ['່', '້', '໊', '໋'], qTextForAudio: 'ຄວາມຮູ້'},
+                    {q: 'ໝູ່ເພື່ອນ', a: '່', opts: ['່', '້', '໊', '໋'], qTextForAudio: 'ໝູ່ເພື່ອນ', q: 'ໝູ _ ເພື່ອນ'},
+                    {q: 'ດຸໝັ່ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ດຸໝັ່ນ'},
+                    {q: 'ຊາວນາ', a: 'າ', opts: ['າ', 'ີ', 'ູ', 'ົ'], qTextForAudio: 'ຊາວນາ', q: 'ຊາວນ _'}
+                ],
+                p4: [
+                    {q: 'ປະເທດລາ _', a: 'ວ', opts: ['ວ', 'ຍ', 'ດ', 'ບ'], qTextForAudio: 'ປະເທດລາວ'},
+                    {q: 'ວັດທະນະທຳ', a: 'ຳ', opts: ['ຳ', 'າ', 'ີ', 'ູ'], qTextForAudio: 'ວັດທະນະທຳ', q: 'ວັດທະນະທ _'},
+                    {q: 'ທຳມະຊາ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ທຳມະຊາດ'},
+                    {q: 'ປະຫວັດສາ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ປະຫວັດສາດ'},
+                    {q: 'ພະຍາບາ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ພະຍາບານ'},
+                    {q: 'ສະຫງົ _', a: 'ບ', opts: ['ບ', 'ດ', 'ກ', 'ງ'], qTextForAudio: 'ສະຫງົບ'},
+                    {q: 'ຈະເລີ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ຈະເລີນ'},
+                    {q: 'ຊັບພະຍາກອ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ຊັບພະຍາກອນ'},
+                    {q: 'ປະຊາຊົ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ປະຊາຊົນ'},
+                    {q: 'ເສດຖະກິ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ເສດຖະກິດ'}
+                ],
+                p5: [
+                    {q: 'ປະຊາທິປະໄຕ', a: 'ຕ', opts: ['ຕ', 'ຈ', 'ປ', 'ພ'], qTextForAudio: 'ປະຊາທິປະໄຕ', q: 'ປະຊາທິປະໄ _'},
+                    {q: 'ວິທະຍາສາ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ວິທະຍາສາດ'},
+                    {q: 'ເອກະລາ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ເອກະລາດ'},
+                    {q: 'ສຸຂະພາ _', a: 'ບ', opts: ['ບ', 'ດ', 'ກ', 'ງ'], qTextForAudio: 'ສຸຂະພາບ'},
+                    {q: 'ສິ່ງແວດລ້ອ _', a: 'ມ', opts: ['ມ', 'ນ', 'ງ', 'ວ'], qTextForAudio: 'ສິ່ງແວດລ້ອມ'},
+                    {q: 'ອະນາຄົ _', a: 'ດ', opts: ['ດ', 'ບ', 'ກ', 'ງ'], qTextForAudio: 'ອະນາຄົດ'},
+                    {q: 'ປະສົບກາ _', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ປະສົບການ'},
+                    {q: 'ພັດທະນາ', a: 'ນ', opts: ['ນ', 'ມ', 'ງ', 'ວ'], qTextForAudio: 'ພັດທະນາ', q: 'ພັດທະ _ າ'},
+                    {q: 'ເຕັກໂນໂລຊ _', a: 'ີ', opts: ['ີ', 'ິ', 'ື', 'ຶ'], qTextForAudio: 'ເຕັກໂນໂລຊີ'},
+                    {q: 'ຊາວໜຸ່ _', a: 'ມ', opts: ['ມ', 'ນ', 'ງ', 'ວ'], qTextForAudio: 'ຊາວໜຸ່ມ'}
+                ]
+            },
+            fill: {
+                p1: [
+                    {q: 'ແມວມັກກິນ ___', a: 'ປາ', opts: ['ປາ', 'ຫຍ້າ', 'ເຂົ້າ', 'ຜັກ']},
+                    {q: 'ນົກບິນຢູ່ເທິງ ___', a: 'ທ້ອງຟ້າ', opts: ['ທ້ອງຟ້າ', 'ໜ້ານ້ຳ', 'ກ້ອງດິນ', 'ຕົ້ນໄມ້']},
+                    {q: 'ຂ້ອຍມີ ___ ສອງໜ່ວຍ', a: 'ຕາ', opts: ['ຕາ', 'ປາກ', 'ດັງ', 'ຫົວ']},
+                    {q: 'ມື້ນີ້ອາກາດ ___', a: 'ຮ້ອນ', opts: ['ຮ້ອນ', 'ແຂງ', 'ຫວານ', 'ເຄັມ']},
+                    {q: 'ນ້ຳມະນາວມີລົດຊາດ ___', a: 'ສົ້ມ', opts: ['ສົ້ມ', 'ຫວານ', 'ເຜັດ', 'ຂົມ']},
+                    {q: 'ຊ້າງມີໂຕ ___', a: 'ໃຫຍ່', opts: ['ໃຫຍ່', 'ນ້ອຍ', 'ສັ້ນ', 'ຍາວ']},
+                    {q: 'ຂ້ອຍລ້າງມືດ້ວຍ ___', a: 'ສະບູ', opts: ['ສະບູ', 'ດິນ', 'ຊາຍ', 'ຂີ້ຕົມ']},
+                    {q: 'ຕອນເຊົ້າຕາເວັນ ___', a: 'ຂຶ້ນ', opts: ['ຂຶ້ນ', 'ຕົກ', 'ນອນ', 'ຫຼິ້ນ']},
+                    {q: 'ນັກຮຽນໄປ ___', a: 'ໂຮງຮຽນ', opts: ['ໂຮງຮຽນ', 'ໂຮງໝໍ', 'ທະເລ', 'ປ່າ']},
+                    {q: 'ຂ້ອຍມັກກິນ ___', a: 'ເຂົ້າ', opts: ['ເຂົ້າ', 'ດິນ', 'ຫຍ້າ', 'ໄມ້']}
+                ],
+                p2: [
+                    {q: 'ຂ້ອຍໄປ ___ ທຸກມື້', a: 'ໂຮງຮຽນ', opts: ['ໂຮງຮຽນ', 'ໂຮງໝໍ', 'ສະໜາມບິນ', 'ໂຮງງານ']},
+                    {q: 'ພໍ່ເຮັດນາເພື່ອປູກ ___', a: 'ເຂົ້າ', opts: ['ເຂົ້າ', 'ດອກໄມ້', 'ຕົ້ນໄມ້', 'ຫຍ້າ']},
+                    {q: 'ແມ່ໄປຊື້ປາຢູ່ ___', a: 'ຕະຫຼາດ', opts: ['ຕະຫຼາດ', 'ວັດ', 'ໂຮງໝໍ', 'ທະນາຄານ']},
+                    {q: 'ເວລາກາງຄືນເຮົາຈະເຫັນ ___', a: 'ດວງຈັນ', opts: ['ດວງຈັນ', 'ຕາເວັນ', 'ຮຸ້ງ', 'ເມກ']},
+                    {q: 'ງົວມັກກິນ ___', a: 'ຫຍ້າ', opts: ['ຫຍ້າ', 'ຊີ້ນ', 'ປາ', 'ເຂົ້າ']},
+                    {q: 'ຂ້ອຍອ່ານ ___', a: 'ປຶ້ມ', opts: ['ປຶ້ມ', 'ໂຕະ', 'ຕັ່ງ', 'ກະດານ']},
+                    {q: 'ຄູສອນໜັງສືໃຫ້ນັກ ___', a: 'ຮຽນ', opts: ['ຮຽນ', 'ບິນ', 'ຮ້ອງ', 'ກິລາ']},
+                    {q: 'ລາວມີຄວາມ ___ ຫຼາຍ', a: 'ສຸກ', opts: ['ສຸກ', 'ທຸກ', 'ໂສກ', 'ເສົ້າ']},
+                    {q: 'ຂ້ອຍອາບນ້ຳໃຫ້ຮ່າງກາຍ ___', a: 'ສະອາດ', opts: ['ສະອາດ', 'ເປື້ອນ', 'ດຳ', 'ໝອງ']},
+                    {q: 'ຕອນແລງຂ້ອຍເຕະບານກັບ ___', a: 'ໝູ່', opts: ['ໝູ່', 'ແມວ', 'ໄກ່', 'ໝູ']}
+                ],
+                p3: [
+                    {q: 'ຝົນຕົກແຮງ ຈຶ່ງເຮັດໃຫ້ ___', a: 'ນ້ຳຖ້ວມ', opts: ['ນ້ຳຖ້ວມ', 'ແດດຮ້ອນ', 'ຫິມະຕົກ', 'ດິນແຫ້ງ']},
+                    {q: 'ນັກຮຽນຄວນຕັ້ງໃຈ ___', a: 'ຮຽນໜັງສື', opts: ['ຮຽນໜັງສື', 'ຫຼິ້ນເກມ', 'ນອນຫຼັບ', 'ເບິ່ງໂທລະທັດ']},
+                    {q: 'ປະເທດລາວມີເມືອງຫຼວງຊື່ວ່າ ___', a: 'ວຽງຈັນ', opts: ['ວຽງຈັນ', 'ປາກເຊ', 'ຫຼວງພະບາງ', 'ສະຫວັນນະເຂດ']},
+                    {q: 'ດອກຈຳປາແມ່ນດອກໄມ້ປະຈຳ ___', a: 'ຊາດ', opts: ['ຊາດ', 'ບ້ານ', 'ເມືອງ', 'ແຂວງ']},
+                    {q: 'ການອອກກຳລັງກາຍເຮັດໃຫ້ຮ່າງກາຍ ___', a: 'ແຂງແຮງ', opts: ['ແຂງແຮງ', 'ອ່ອນເພຍ', 'ເຈັບປ່ວຍ', 'ເມື່ອຍ']},
+                    {q: 'ທ່ານໝໍເຮັດວຽກຢູ່ ___', a: 'ໂຮງໝໍ', opts: ['ໂຮງໝໍ', 'ໂຮງຮຽນ', 'ຕະຫຼາດ', 'ວັດ']},
+                    {q: 'ຂ້ອຍຊ່ວຍແມ່ ___ ຖ້ວຍ', a: 'ລ້າງ', opts: ['ລ້າງ', 'ຖິ້ມ', 'ທຸບ', 'ຊ່ອນ']},
+                    {q: 'ຕົ້ນໄມ້ຊ່ວຍໃຫ້ອາກາດ ___', a: 'ສົດຊື່ນ', opts: ['ສົດຊື່ນ', 'ຮ້ອນອົບເອົ້າ', 'ເໝັນ', 'ແຫ້ງແລ້ງ']},
+                    {q: 'ຄວນລ້າງມືກ່ອນ ___ ອາຫານ', a: 'ກິນ', opts: ['ກິນ', 'ເຮັດ', 'ຊື້', 'ຖິ້ມ']},
+                    {q: 'ຂ້ອຍມັກສີຟ້າ ເພາະມັນຄືສີຂອງ ___', a: 'ທ້ອງຟ້າ', opts: ['ທ້ອງຟ້າ', 'ໃບໄມ້', 'ດິນ', 'ເລືອດ']}
+                ],
+                p4: [
+                    {q: 'ປະເທດລາວມີແມ່ນ້ຳ ___ ໄຫຼຜ່ານ', a: 'ຂອງ', opts: ['ຂອງ', 'ງື່ມ', 'ອູ', 'ເຊບັ້ງໄຟ']},
+                    {q: 'ການອ່ານປຶ້ມເຮັດໃຫ້ເຮົາມີ ___', a: 'ຄວາມຮູ້', opts: ['ຄວາມຮູ້', 'ຄວາມທຸກ', 'ຄວາມຫິວ', 'ຄວາມອິດເມື່ອຍ']},
+                    {q: 'ປະຊາຊົນລາວສ່ວນໃຫຍ່ເຮັດອາຊີບ ___', a: 'ຊາວນາ', opts: ['ຊາວນາ', 'ນັກບິນ', 'ວິສະວະກອນ', 'ນັກທຸລະກິດ']},
+                    {q: 'ຄວນຖິ້ມຂີ້ເຫຍື້ອລົງໃນ ___', a: 'ຖັງຂີ້ເຫຍື້ອ', opts: ['ຖັງຂີ້ເຫຍື້ອ', 'ແມ່ນ້ຳ', 'ແຄມທາງ', 'ຫ້ອງຮຽນ']},
+                    {q: 'ພາສາທາງການຂອງປະເທດລາວຄືພາສາ ___', a: 'ລາວ', opts: ['ລາວ', 'ອັງກິດ', 'ໄທ', 'ຈີນ']},
+                    {q: 'ຊ້າງເປັນສັດ ___', a: 'ລ້ຽງລູກດ້ວຍນ້ຳນົມ', opts: ['ລ້ຽງລູກດ້ວຍນ້ຳນົມ', 'ເຄິ່ງບົກເຄິ່ງນ້ຳ', 'ເລືອຄານ', 'ປີກ']},
+                    {q: 'ເຮົາໃຊ້ອົກຊີແຊນເພື່ອ ___', a: 'ຫາຍໃຈ', opts: ['ຫາຍໃຈ', 'ຍ່ອຍອາຫານ', 'ຂັບຖ່າຍ', 'ເບິ່ງເຫັນ']},
+                    {q: 'ວັດຊຽງທອງຕັ້ງຢູ່ແຂວງ ___', a: 'ຫຼວງພະບາງ', opts: ['ຫຼວງພະບາງ', 'ວຽງຈັນ', 'ຈຳປາສັກ', 'ຊຽງຂວາງ']},
+                    {q: 'ດວງຕາເວັນຂຶ້ນທາງທິດ ___', a: 'ຕາເວັນອອກ', opts: ['ຕາເວັນອອກ', 'ຕາເວັນຕົກ', 'ເໜືອ', 'ໃຕ້']},
+                    {q: 'ການນອນພັກຜ່ອນໃຫ້ພຽງພໍເປັນຜົນດີຕໍ່ ___', a: 'ສຸຂະພາບ', opts: ['ສຸຂະພາບ', 'ການເງິນ', 'ການຮຽນ', 'ໝູ່ເພື່ອນ']}
+                ],
+                p5: [
+                    {q: 'ວັນຊາດຂອງປະເທດລາວແມ່ນວັນທີ ___', a: '2 ທັນວາ', opts: ['2 ທັນວາ', '1 ມັງກອນ', '13 ເມສາ', '7 ຕຸລາ']},
+                    {q: 'ອົງການສະຫະປະຊາຊາດມີຕົວຫຍໍ້ວ່າ ___', a: 'UN', opts: ['UN', 'ASEAN', 'WHO', 'WTO']},
+                    {q: 'ທາດອາຍທີ່ພືດດູດເອົາໄປໃຊ້ໃນການສັງເຄາະແສງຄື ___', a: 'ກາກບອນໄດອອກໄຊ', opts: ['ກາກບອນໄດອອກໄຊ', 'ອົກຊີແຊນ', 'ນີໂຕຣແຊນ', 'ຮີໂດຣແຊນ']},
+                    {q: 'ການປູກຕົ້ນໄມ້ຊ່ວຍຫຼຸດຜ່ອນພາວະໂລກ ___', a: 'ຮ້ອນ', opts: ['ຮ້ອນ', 'ໜາວ', 'ແຫ້ງແລ້ງ', 'ນ້ຳຖ້ວມ']},
+                    {q: 'ຄວາມສາມັກຄີຄືພະລັງອັນຍິ່ງ ___', a: 'ໃຫຍ່', opts: ['ໃຫຍ່', 'ນ້ອຍ', 'ສຳຄັນ', 'ແຮງ']},
+                    {q: 'ການເຄົາລົບຜູ້ອາວຸໂສເປັນ ___ ອັນດີງາມຂອງລາວ', a: 'ຮີດຄອງປະເພນີ', opts: ['ຮີດຄອງປະເພນີ', 'ກົດໝາຍ', 'ຂໍ້ຫ້າມ', 'ນິໄສ']},
+                    {q: 'ດິນແດນລ້ານຊ້າງໝາຍເຖິງປະເທດ ___ ໃນອະດີດ', a: 'ລາວ', opts: ['ລາວ', 'ໄທ', 'ມຽນມາ', 'ກຳປູເຈຍ']},
+                    {q: 'ພະທາດຫຼວງເປັນປູຊະນີຍະສະຖານທີ່ສຳຄັນຂອງຊາດ ___', a: 'ລາວ', opts: ['ລາວ', 'ໄທ', 'ມຽນມາ', 'ຈີນ']},
+                    {q: 'ເຮົາຄວນອະນຸລັກ ___ ໃຫ້ຄົງຢູ່ຕະຫຼອດໄປ', a: 'ສິ່ງແວດລ້ອມ', opts: ['ສິ່ງແວດລ້ອມ', 'ມົນລະພິດ', 'ຂີ້ເຫຍື້ອ', 'ນ້ຳເປື້ອນ']},
+                    {q: 'ຜູ້ທີ່ປະຕິບັດຕາມກົດລະບຽບຈរາຈອນຊ່ວຍຫຼຸດຜ່ອນ ___', a: 'ອຸບັດຕິເຫດ', opts: ['ອຸບັດຕິເຫດ', 'ລົດຕິດ', 'ຄ່ານ້ຳມັນ', 'ໄລຍະທາງ']}
+                ]
+            },
+            challenge: {
+                p1: [
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ດຳ" ຄື ___', a: 'ຂາວ', opts: ['ຂາວ', 'ແດງ', 'ຟ້າ', 'ຂຽວ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ໃຫຍ່" ຄື ___', a: 'ນ້ອຍ', opts: ['ນ້ອຍ', 'ສູງ', 'ຕ່ຳ', 'ຍາວ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ຮ້ອນ" ຄື ___', a: 'ໜາວ', opts: ['ໜາວ', 'ອຸ່ນ', 'ເຢັນ', 'ແຫ້ງ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ສູງ" ຄື ___', a: 'ຕ່ຳ', opts: ['ຕ່ຳ', 'ໃຫຍ່', 'ນ້ອຍ', 'ຍາວ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ຍາວ" ຄື ___', a: 'ສັ້ນ', opts: ['ສັ້ນ', 'ໃຫຍ່', 'ນ້ອຍ', 'ຕ່ຳ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ດີ" ຄື ___', a: 'ຊົ່ວ', opts: ['ຊົ່ວ', 'ງາມ', 'ຂີ້ຮ້າຍ', 'ເກັ່ງ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ໄວ" ຄື ___', a: 'ຊ້າ', opts: ['ຊ້າ', 'ແລ່ນ', 'ຍ່າງ', 'ຢຸດ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ໃນ" ຄື ___', a: 'ນອກ', opts: ['ນອກ', 'ເທິງ', 'ລຸ່ມ', 'ກາງ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ເທິງ" ຄື ___', a: 'ລຸ່ມ', opts: ['ລຸ່ມ', 'ນອກ', 'ໃນ', 'ກາງ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ໄປ" ຄື ___', a: 'ມາ', opts: ['ມາ', 'ຢຸດ', 'ນັ່ງ', 'ນອນ']}
+                ],
+                p2: [
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ໜັກ" ຄື ___', a: 'ເບົາ', opts: ['ເບົາ', 'ແຂງ', 'ອ່ອນ', 'ໜາ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ກວ້າງ" ຄື ___', a: 'ແຄບ', opts: ['ແຄບ', 'ຍາວ', 'ສັ້ນ', 'ນ້ອຍ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ໃໝ່" ຄື ___', a: 'ເກົ່າ', opts: ['ເກົ່າ', 'ຂາດ', 'ໝອງ', 'ແພງ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ສະອາດ" ຄື ___', a: 'ເປື້ອນ', opts: ['ເປື້ອນ', 'ຫອມ', 'ເໝັນ', 'ດຳ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ສະຫວ່າງ" ຄື ___', a: 'ມືດ', opts: ['ມືດ', 'ແຈ້ງ', 'ມົວ', 'ດຳ']},
+                    {q: 'ຄຳຄ້ອງຈອງ: ກິນເຂົ້າແລ້ວຕ້ອງກິນ ___', a: 'ປາ', opts: ['ປາ', 'ຊີ້ນ', 'ຜັກ', 'ນ້ຳ']}, // ນ້ຳ ບໍ່ຄ້ອງ, ປາ ບໍ່ຄ້ອງ... ເອົາງ່າຍໆ: ໄປນາ ມາ___ (ຫາ)
+                    {q: 'ຄຳຄ້ອງຈອງ: ໄປນາ ມາ ___', a: 'ຫາ', opts: ['ຫາ', 'ໄປ', 'ນອນ', 'ຫຼິ້ນ']},
+                    {q: 'ຄຳຄ້ອງຈອງ: ປູປາ ໜ້າ ___', a: 'ຕາ', opts: ['ຕາ', 'ປາກ', 'ດັງ', 'ຫູ']},
+                    {q: 'ຊ້າງມີ ___ (ໃຊ້ຈັບສິ່ງຂອງ)', a: 'ງວງ', opts: ['ງວງ', 'ງາ', 'ຫາງ', 'ຫູ']},
+                    {q: 'ນົກມີ ___ (ໃຊ້ບິນ)', a: 'ປີກ', opts: ['ປີກ', 'ຂາ', 'ຫາງ', 'ປາກ']}
+                ],
+                p3: [
+                    {q: '"ດີໃຈ" ມີຄວາມໝາຍຄ້າຍກັບ ___', a: 'ມ່ວນຊື່ນ', opts: ['ມ່ວນຊື່ນ', 'ໂສກເສົ້າ', 'ຮ້ອງໄຫ້', 'ໃຈຮ້າຍ']},
+                    {q: '"ໄວ" ມີຄວາມໝາຍຄ້າຍກັບ ___', a: 'ດ່ວນ', opts: ['ດ່ວນ', 'ຊ້າ', 'ຢຸດ', 'ຄ່ອຍ']},
+                    {q: '"ງາມ" ມີຄວາມໝາຍຄ້າຍກັບ ___', a: 'ສວຍ', opts: ['ສວຍ', 'ຂີ້ຮ້າຍ', 'ດຳ', 'ໝອງ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ສຳເລັດ" ຄື ___', a: 'ລົ້ມເຫຼວ', opts: ['ລົ້ມເຫຼວ', 'ຈົບ', 'ເລີ່ມ', 'ດີ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ຂະຫຍັນ" ຄື ___', a: 'ຂີ້ຄ້ານ', opts: ['ຂີ້ຄ້ານ', 'ດຸໝັ່ນ', 'ເກັ່ງ', 'ໂງ່']},
+                    {q: 'ສຸພາສິດ: ນົກບໍ່ມີຂົນ ຄົນບໍ່ມີ ___ ຂຶ້ນສູ່ທີ່ສູງບໍ່ໄດ້', a: 'ຄວາມຮູ້', opts: ['ຄວາມຮູ້', 'ເງິນ', 'ໝູ່', 'ເຄື່ອງນຸ່ງ']},
+                    {q: 'ສຸພາສິດ: ກິນເຂົ້າໃຫ້ເບິ່ງໝໍ້ ນັ່ງທັ່ງໃຫ້ເບິ່ງ ___', a: 'ບ່ອນ', opts: ['ບ່ອນ', 'ພື້ນ', 'ຕັ່ງ', 'ສາດ']},
+                    {q: 'ສຸພາສິດ: ປູກເຮືອນກວມຕໍ ປູກຫໍກວມ ___', a: 'ປວກ', opts: ['ປວກ', 'ມົດ', 'ດິນ', 'ຫຍ້າ']},
+                    {q: 'ແມວຈັບໜູ (ໃຜເປັນຜູ້ຖືກກະທຳ?)', a: 'ໜູ', opts: ['ໜູ', 'ແມວ', 'ຈັບ', 'ບໍ່ມີ']},
+                    {q: 'ຂ້ອຍເຕະບານ (ຄຳໃດແມ່ນຄຳກຳມະ?)', a: 'ເຕະ', opts: ['ເຕະ', 'ຂ້ອຍ', 'ບານ', 'ບໍ່ມີ']}
+                ],
+                p4: [
+                    {q: 'ສຸພາສິດ: ເຮັດດີໄດ້ດີ ເຮັດຊົ່ວໄດ້ ___', a: 'ຊົ່ວ', opts: ['ຊົ່ວ', 'ດີ', 'ບາບ', 'ບຸນ']},
+                    {q: 'ສຸພາສິດ: ຕີງູໃຫ້ ___ ເຫັນ', a: 'ກາ', opts: ['ກາ', 'ໝາ', 'ແມວ', 'ໄກ່']},
+                    {q: 'ສຸພາສິດ: ເຂົ້າເມືອງຕາຫຼິ່ວ ໃຫ້ຫຼິ່ວຕາ ___', a: 'ຕາມ', opts: ['ຕາມ', 'ເບິ່ງ', 'ຊອກ', 'ຫຼຽວ']},
+                    {q: '"ຊ້າງ" ເອີ້ນເປັນຫຍັງ?', a: 'ໂຕ', opts: ['ໂຕ', 'ຄັນ', 'ໜ່ວຍ', 'ເສັ້ນ']},
+                    {q: '"ລົດຖີບ" ເອີ້ນເປັນຫຍັງ?', a: 'ຄັນ', opts: ['ຄັນ', 'ໂຕ', 'ໜ່ວຍ', 'ເສັ້ນ']},
+                    {q: '"ປຶ້ມ" ເອີ້ນເປັນຫຍັງ?', a: 'ຫົວ', opts: ['ຫົວ', 'ອັນ', 'ໜ່ວຍ', 'ໃບ']},
+                    {q: 'ຄຳວ່າ "ງາມ" ເປັນຄຳຫຍັງ?', a: 'ຄຳຄຸນນາມ', opts: ['ຄຳຄຸນນາມ', 'ຄຳນາມ', 'ຄຳກຳມະ', 'ຄຳແທນນາມ']},
+                    {q: 'ຄຳວ່າ "ແລ່ນ" ເປັນຄຳຫຍັງ?', a: 'ຄຳກຳມະ', opts: ['ຄຳກຳມະ', 'ຄຳນາມ', 'ຄຳຄຸນນາມ', 'ຄຳແທນນາມ']},
+                    {q: 'ຄຳວ່າ "ຂ້ອຍ" ເປັນຄຳຫຍັງ?', a: 'ຄຳແທນນາມ', opts: ['ຄຳແທນນາມ', 'ຄຳນາມ', 'ຄຳກຳມະ', 'ຄຳຄຸນນາມ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ປະຢັດ" ຄື ___', a: 'ຟຸມເຟືອຍ', opts: ['ຟຸມເຟືອຍ', 'ຂີ້ຖີ່', 'ໃຈບຸນ', 'ທຸກຍາກ']}
+                ],
+                p5: [
+                    {q: 'ສຸພາສິດ: ສິບປາກເວົ້າ ບໍ່ທໍ່ຕາ ___', a: 'ເຫັນ', opts: ['ເຫັນ', 'ເບິ່ງ', 'ແນມ', 'ຫຼຽວ']},
+                    {q: 'ສຸພາສິດ: ນ້ຳມາປາກິນມົດ ນ້ຳລົດມົດກິນ ___', a: 'ປາ', opts: ['ປາ', 'ປູ', 'ກຸ້ງ', 'ຫອຍ']},
+                    {q: 'ສຸພາສິດ: ຢ່າຊິງສຸກກ່ອນ ___', a: 'ຫ່າມ', opts: ['ຫ່າມ', 'ດິບ', 'ເໜົ່າ', 'ລົ່ນ']},
+                    {q: 'ປະໂຫຍກ "ຊ້າງກິນອ້ອຍ" ຄຳໃດເປັນຕົວປະທານ?', a: 'ຊ້າງ', opts: ['ຊ້າງ', 'ກິນ', 'ອ້ອຍ', 'ບໍ່ມີ']},
+                    {q: 'ປະໂຫຍກ "ນົກບິນໄວ" ຄຳໃດເປັນຄຳຂະຫຍາຍ?', a: 'ໄວ', opts: ['ໄວ', 'ນົກ', 'ບິນ', 'ບໍ່ມີ']},
+                    {q: 'ຄຳວ່າ "ບິດາ" ມີຄວາມໝາຍກົງກັບຄຳວ່າ ___', a: 'ພໍ່', opts: ['ພໍ່', 'ແມ່', 'ປູ່', 'ຍ່າ']},
+                    {q: 'ຄຳວ່າ "ມານດາ" ມີຄວາມໝາຍກົງກັບຄຳວ່າ ___', a: 'ແມ່', opts: ['ແມ່', 'ພໍ່', 'ຕາ', 'ຍາຍ']},
+                    {q: 'ຄຳວ່າ "ໂຮງຮຽນ" ເປັນຄຳປະເພດໃດ?', a: 'ຄຳນາມ', opts: ['ຄຳນາມ', 'ຄຳກຳມະ', 'ຄຳຄຸນນາມ', 'ຄຳແທນນາມ']},
+                    {q: 'ຄຳວ່າ "ສະຫງ່າງາມ" ຂຽນແນວໃດຈຶ່ງຖືກຕ້ອງ?', a: 'ສະຫງ່າງາມ', opts: ['ສະຫງ່າງາມ', 'ສະຫງ່າມ', 'ສະຫງ່າງ່າມ', 'ສະງ່າງາມ']},
+                    {q: 'ຄຳກົງກັນຂ້າມກັບ "ອະດີດ" ຄື ___', a: 'ອະນາຄົດ', opts: ['ອະນາຄົດ', 'ປັດຈຸບັນ', 'ມື້ວານ', 'ມື້ອື່ນ']}
+                ]
+            }
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem('laoAdventureData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    playerData = { ...playerData, ...parsed };
+                } catch(e) { console.error("Error loading data"); }
+            }
+            if(playerData.badges.length === 0) playerData.badges.push('starter');
+            document.getElementById('difficulty-select').value = playerData.difficulty;
+            updateHomeUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('laoAdventureData', JSON.stringify(playerData));
+            updateHomeUI();
+        }
+
+        function saveDifficulty() {
+            playerData.difficulty = document.getElementById('difficulty-select').value;
+            saveData();
+            playSound('click');
+        }
+
+        function showScreen(screenId) {
+            playSound('click');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'screen-stats') renderBadges();
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+
+        function updateHomeUI() {
+            document.getElementById('home-total-stars').textContent = playerData.totalStars;
+            document.getElementById('stats-total-stars').textContent = playerData.totalStars;
+            
+            let highestBadge = BADGES[0];
+            for (let i = BADGES.length - 1; i >= 0; i--) {
+                if (playerData.badges.includes(BADGES[i].id)) {
+                    highestBadge = BADGES[i];
+                    break;
+                }
+            }
+            document.getElementById('home-highest-badge').innerHTML = `${highestBadge.icon} ${highestBadge.name}`;
+        }
+
+        function renderBadges() {
+            const container = document.getElementById('badges-container');
+            container.innerHTML = '';
+            BADGES.forEach(badge => {
+                const isUnlocked = playerData.badges.includes(badge.id);
+                const badgeEl = document.createElement('div');
+                badgeEl.className = `flex flex-col items-center justify-center p-3 rounded-2xl ${isUnlocked ? 'bg-white shadow border-2 border-yellow-300' : 'bg-slate-100 border-2 border-slate-200 opacity-60 grayscale'}`;
+                badgeEl.innerHTML = `
+                    <div class="text-4xl mb-1 ${isUnlocked ? 'animate-bounce-slow' : ''}">${badge.icon}</div>
+                    <div class="text-xs font-bold text-center ${isUnlocked ? 'text-gray-700' : 'text-gray-400'}">${badge.name}</div>
+                    ${!isUnlocked ? `<div class="text-[10px] text-gray-500 mt-1">⭐ ${badge.reqStars}</div>` : ''}
+                `;
+                container.appendChild(badgeEl);
+            });
+        }
+
+        function startGame(mode) {
+            playSound('click');
+            currentMode = mode;
+            currentQuestion = 0;
+            score = 0;
+            isAnswering = false;
+            
+            let sourceQuestions = QUESTION_BANK[mode][playerData.difficulty];
+            currentQuestionList = [...sourceQuestions].sort(() => Math.random() - 0.5).slice(0, 10);
+            totalQuestions = currentQuestionList.length;
+
+            document.getElementById('game-score').textContent = score;
+            showScreen('screen-game');
+            renderQuestion();
+        }
+
+        function shuffleOptions(options) {
+            return [...options].sort(() => Math.random() - 0.5);
+        }
+
+        function renderQuestion() {
+            isAnswering = false;
+            const q = currentQuestionList[currentQuestion];
+            
+            document.getElementById('current-question-num').textContent = currentQuestion + 1;
+            const progressPct = ((currentQuestion) / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPct}%`;
+            
+            const qText = document.getElementById('question-text');
+            const subText = document.getElementById('question-subtext');
+            const visualAid = document.getElementById('visual-aid');
+            const listenBtn = document.getElementById('listen-q-btn');
+            
+            visualAid.classList.add('hidden');
+            listenBtn.classList.add('hidden');
+            subText.classList.add('hidden');
+            
+            if (currentMode === 'match') {
+                visualAid.textContent = q.q; 
+                visualAid.classList.remove('hidden');
+                qText.innerHTML = "ອັນນີ້ແມ່ນຫຍັງ?";
+                listenBtn.classList.remove('hidden');
+            } else if (currentMode === 'spell') {
+                qText.innerHTML = q.q.replace('_', '<span class="text-emerald-500 border-b-4 border-emerald-500 px-4">_</span>');
+                subText.textContent = "ຊອກຫາຕົວໜັງສືທີ່ຫາຍໄປ";
+                subText.classList.remove('hidden');
+                listenBtn.classList.remove('hidden');
+            } else if (currentMode === 'fill') {
+                qText.innerHTML = q.q.replace('___', '<span class="text-emerald-500 border-b-4 border-emerald-500 px-4">___</span>');
+                listenBtn.classList.remove('hidden');
+            } else if (currentMode === 'challenge') {
+                qText.innerHTML = q.q.replace('___', '<span class="text-emerald-500 border-b-4 border-emerald-500 px-4">___</span>');
+                listenBtn.classList.remove('hidden');
+            }
+
+            const container = document.getElementById('answers-container');
+            container.innerHTML = '';
+            
+            let shuffledOpts = shuffleOptions(q.opts);
+
+            shuffledOpts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-cartoon bg-white text-emerald-700 font-bold text-2xl sm:text-3xl py-5 rounded-3xl border-4 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 shadow-md transition-colors flex justify-center items-center";
+                
+                // ຮູບລຳໂພງນ້ອຍໆ ເພື່ອບອກວ່າມີສຽງ
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-solid fa-volume-up text-emerald-300 text-xl ml-3 opacity-60"></i>`;
+                
+                btn.onclick = () => checkAnswer(opt, btn);
+                container.appendChild(btn);
+            });
+
+            const fb = document.getElementById('feedback-msg');
+            fb.style.opacity = '0';
+        }
+
+        function checkAnswer(selectedAns, btnElement) {
+            if (isAnswering) return;
+            isAnswering = true;
+            
+            // ອ່ານອອກສຽງພາສາລາວທັນທີທີ່ກົດເລືອກຄຳຕອບ
+            speakText(selectedAns);
+            
+            const q = currentQuestionList[currentQuestion];
+            const isCorrect = selectedAns === q.a;
+            const fb = document.getElementById('feedback-msg');
+            const qText = document.getElementById('question-text');
+
+            Array.from(document.getElementById('answers-container').children).forEach(b => {
+                if(b !== btnElement) b.classList.add('disabled');
+            });
+
+            if (isCorrect) {
+                playSound('correct');
+                score++;
+                document.getElementById('game-score').textContent = score;
+                
+                btnElement.classList.remove('bg-white', 'border-emerald-200', 'text-emerald-700');
+                btnElement.classList.add('bg-green-400', 'border-green-600', 'text-white', 'animate-pop');
+                
+                if (currentMode === 'spell' || currentMode === 'fill' || currentMode === 'challenge') {
+                    let replaceChar = currentMode === 'spell' ? '_' : '___';
+                    qText.innerHTML = q.q.replace(replaceChar, `<span class="text-green-500 font-black animate-pop">${q.a}</span>`);
+                }
+                
+                fb.innerHTML = '⭐ ເກັ່ງຫຼາຍ! 🎉';
+                fb.className = "absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-700 border-green-400 border-2 px-6 py-2 rounded-full font-bold text-xl shadow-lg transition-opacity duration-300 whitespace-nowrap z-10 animate-bounce-slow";
+                fb.style.opacity = '1';
+                
+                createConfetti(15);
+                setTimeout(nextQuestion, 1500);
+            } else {
+                playSound('wrong');
+                btnElement.classList.remove('bg-white', 'border-emerald-200');
+                btnElement.classList.add('bg-rose-300', 'border-rose-500', 'text-white', 'animate-shake');
+                
+                const encouragements = ['ລອງອີກຄັ້ງ! 😊', 'ເກືອບຖືກແລ້ວ! ✌️', 'ຄິດດີໆເດີ້! 🧠'];
+                fb.innerHTML = encouragements[Math.floor(Math.random() * encouragements.length)];
+                fb.className = "absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-rose-100 text-rose-700 border-rose-400 border-2 px-6 py-2 rounded-full font-bold text-lg shadow-lg transition-opacity duration-300 whitespace-nowrap z-10";
+                fb.style.opacity = '1';
+                
+                setTimeout(() => {
+                    isAnswering = false;
+                    fb.style.opacity = '0';
+                    btnElement.classList.remove('bg-rose-300', 'border-rose-500', 'text-white', 'animate-shake');
+                    btnElement.classList.add('bg-white', 'border-emerald-200');
+                    Array.from(document.getElementById('answers-container').children).forEach(b => {
+                        b.classList.remove('disabled');
+                    });
+                }, 1200);
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < totalQuestions) {
+                renderQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function confirmExit() {
+            showScreen('screen-levels');
+        }
+
+        function endGame() {
+            playSound('win');
+            document.getElementById('progress-bar').style.width = `100%`;
+            
+            setTimeout(() => {
+                showScreen('screen-summary');
+                createConfetti(100);
+                
+                const modeNames = {
+                    'match': 'ຈັບຄູ່ຮູບພາບ',
+                    'spell': 'ປະກອບຄຳສັບ',
+                    'fill': 'ຕື່ມຄຳໃນຊ່ອງຫວ່າງ',
+                    'challenge': 'ໝວດທ້າທາຍ'
+                };
+                document.getElementById('summary-mode-name').textContent = modeNames[currentMode];
+                document.getElementById('summary-correct').textContent = score;
+                document.getElementById('summary-stars').textContent = score;
+                
+                const icon = document.getElementById('summary-icon');
+                if (score === totalQuestions) icon.textContent = '👑';
+                else if (score >= totalQuestions*0.7) icon.textContent = '🌟';
+                else if (score >= totalQuestions*0.4) icon.textContent = '👍';
+                else icon.textContent = '💪';
+                
+                playerData.totalStars += score;
+                checkNewBadges();
+                saveData();
+                
+            }, 500);
+        }
+
+        function checkNewBadges() {
+            const newBadgeMsg = document.getElementById('new-badge-msg');
+            newBadgeMsg.classList.add('hidden');
+            let unlockedNew = false;
+            
+            BADGES.forEach(badge => {
+                if (playerData.totalStars >= badge.reqStars && !playerData.badges.includes(badge.id)) {
+                    playerData.badges.push(badge.id);
+                    unlockedNew = true;
+                }
+            });
+            
+            if (unlockedNew) {
+                newBadgeMsg.classList.remove('hidden');
+                playSound('win'); 
+            }
+        }
+
+        function playAgain() {
+            startGame(currentMode);
+        }
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createConfetti(amount) {
+            const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d', '#10b981', '#38bdf8'];
+            for (let i = 0; i < amount; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 50,
+                    r: Math.random() * 6 + 4,
+                    dx: Math.random() * 10 - 5,
+                    dy: Math.random() * -10 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05,
+                    tiltAngle: 0
+                });
+            }
+            if(particles.length === amount) { 
+                requestAnimationFrame(renderConfetti);
+            }
+        }
+
+        function renderConfetti() {
+            if (particles.length === 0) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.tiltAngle += p.tiltAngleInc;
+                p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+                p.x += Math.sin(p.tiltAngle) * 2;
+                p.dy += 0.2; 
+                p.y += p.dy;
+                p.x += p.dx;
+
+                ctx.beginPath();
+                ctx.lineWidth = p.r;
+                ctx.strokeStyle = p.color;
+                ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                ctx.stroke();
+            }
+            particles = particles.filter(p => p.y < canvas.height + 100);
+            if (particles.length > 0) {
+                requestAnimationFrame(renderConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        window.onload = () => {
+            loadData();
+            // Initialize Audio and Speech synthesis on first interaction
+            const initAudio = () => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if ('speechSynthesis' in window) {
+                    let msg = new SpeechSynthesisUtterance('');
+                    msg.volume = 0;
+                    window.speechSynthesis.speak(msg);
+                }
+                document.body.removeEventListener('touchstart', initAudio);
+                document.body.removeEventListener('click', initAudio);
+            };
+            document.body.addEventListener('touchstart', initAudio, {once:true});
+            document.body.addEventListener('click', initAudio, {once:true});
+        };
+
+    </script>
+</body>
+</html>
